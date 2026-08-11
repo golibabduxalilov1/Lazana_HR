@@ -3,10 +3,14 @@ from __future__ import annotations
 import logging
 
 from aiogram import Bot
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Application, Position, PositionCategory
+from app.db.models import Admin, Application, Position, PositionCategory
 
 logger = logging.getLogger(__name__)
+
+NOTIFY_ROLES = ("super_admin", "admin", "hr")
 
 
 def build_hr_notification_text(application: Application, position: Position, category: PositionCategory) -> str:
@@ -24,10 +28,20 @@ def build_hr_notification_text(application: Application, position: Position, cat
 
 
 async def notify_hr(
-    bot: Bot, chat_id: int, application: Application, position: Position, category: PositionCategory
+    bot: Bot,
+    session: AsyncSession,
+    application: Application,
+    position: Position,
+    category: PositionCategory,
 ) -> None:
     text = build_hr_notification_text(application, position, category)
-    try:
-        await bot.send_message(chat_id=chat_id, text=text)
-    except Exception:
-        logger.exception("HR guruhiga bildirishnoma yuborishda xatolik (application_id=%s)", application.id)
+    recipients = await session.scalars(
+        select(Admin.telegram_id).where(Admin.role.in_(NOTIFY_ROLES), Admin.is_active.is_(True))
+    )
+    for chat_id in recipients:
+        try:
+            await bot.send_message(chat_id=chat_id, text=text)
+        except Exception:
+            logger.exception(
+                "Xodimga bildirishnoma yuborishda xatolik (application_id=%s, chat_id=%s)", application.id, chat_id
+            )

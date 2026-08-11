@@ -28,10 +28,10 @@ class IsAdmin(BaseFilter):
 
 
 def can_manage(admin: Admin) -> bool:
-    """Arizalar statusini o'zgartirish va eksport qilish huquqi (hr, super_admin)."""
-    return admin.role in ("hr", "super_admin")
+    """Arizalar statusini o'zgartirish va eksport qilish huquqi (super_admin, admin, hr)."""
+    return admin.role in ("super_admin", "admin", "hr")
 
 
 def can_configure(admin: Admin) -> bool:
-    """Lavozimlar, matnlar va adminlarni boshqarish huquqi (faqat super_admin)."""
-    return admin.role == "super_admin"
+    """Lavozimlar, matnlar va xodimlarni boshqarish huquqi (super_admin, admin)."""
+    return admin.role in ("super_admin", "admin")

@@ -1,0 +1,177 @@
+from __future__ import annotations
+
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from tests.conftest import auth_headers, make_admin
+
+
+async def test_list_employees_requires_auth(client: AsyncClient) -> None:
+    res = await client.get("/api/employees")
+    assert res.status_code == 401
+
+
+async def test_list_employees_rejects_hr(client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]) -> None:
+    hr = await make_admin(session_maker, telegram_id=1, role="hr", with_login=False)
+    res = await client.get("/api/employees", headers=auth_headers(hr))
+    assert res.status_code == 403
+
+
+async def test_list_employees_allows_admin_and_super_admin(
+    client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
+    super_admin = await make_admin(session_maker, telegram_id=2, role="super_admin")
+    admin = await make_admin(session_maker, telegram_id=3, role="admin")
+
+    res = await client.get("/api/employees", headers=auth_headers(super_admin))
+    assert res.status_code == 200
+    assert len(res.json()) == 2
+
+    res = await client.get("/api/employees", headers=auth_headers(admin))
+    assert res.status_code == 200
+
+
+async def test_super_admin_can_create_super_admin(
+    client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
+    super_admin = await make_admin(session_maker, telegram_id=10, role="super_admin")
+    res = await client.post(
+        "/api/employees",
+        headers=auth_headers(super_admin),
+        json={"full_name": "Yangi Super", "phone": "+998901112233", "telegram_id": 999, "role": "super_admin"},
+    )
+    assert res.status_code == 201
+    body = res.json()
+    assert body["role"] == "super_admin"
+    assert body["phone"] == "+998901112233"
+
+
+async def test_admin_cannot_create_super_admin(
+    client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
+    admin = await make_admin(session_maker, telegram_id=11, role="admin")
+    res = await client.post(
+        "/api/employees",
+        headers=auth_headers(admin),
+        json={"full_name": "X", "phone": None, "telegram_id": 1000, "role": "super_admin"},
+    )
+    assert res.status_code == 403
+
+
+async def test_admin_can_create_hr_and_admin(
+    client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
+    admin = await make_admin(session_maker, telegram_id=12, role="admin")
+    res = await client.post(
+        "/api/employees",
+        headers=auth_headers(admin),
+        json={"full_name": "HR odam", "phone": None, "telegram_id": 1001, "role": "hr"},
+    )
+    assert res.status_code == 201
+    body = res.json()
+    assert body["role"] == "hr"
+
+
+async def test_create_employee_duplicate_telegram_id_rejected(
+    client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
+    super_admin = await make_admin(session_maker, telegram_id=20, role="super_admin")
+    existing = await make_admin(session_maker, telegram_id=21, role="hr", with_login=False)
+    res = await client.post(
+        "/api/employees",
+        headers=auth_headers(super_admin),
+        json={"full_name": "Dup", "phone": None, "telegram_id": existing.telegram_id, "role": "hr"},
+    )
+    assert res.status_code == 400
+
+
+async def test_admin_cannot_modify_existing_super_admin(
+    client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
+    admin = await make_admin(session_maker, telegram_id=30, role="admin")
+    target_super = await make_admin(session_maker, telegram_id=31, role="super_admin")
+    res = await client.patch(
+        f"/api/employees/{target_super.id}",
+        headers=auth_headers(admin),
+        json={"full_name": "Renamed"},
+    )
+    assert res.status_code == 403
+
+
+async def test_admin_cannot_promote_target_to_super_admin(
+    client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
+    admin = await make_admin(session_maker, telegram_id=32, role="admin")
+    target_hr = await make_admin(session_maker, telegram_id=33, role="hr", with_login=False)
+    res = await client.patch(
+        f"/api/employees/{target_hr.id}",
+        headers=auth_headers(admin),
+        json={"role": "super_admin"},
+    )
+    assert res.status_code == 403
+
+
+async def test_cannot_deactivate_self(client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]) -> None:
+    super_admin = await make_admin(session_maker, telegram_id=40, role="super_admin")
+    res = await client.patch(
+        f"/api/employees/{super_admin.id}",
+        headers=auth_headers(super_admin),
+        json={"is_active": False},
+    )
+    assert res.status_code == 403
+
+
+async def test_cannot_change_own_role(client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]) -> None:
+    admin = await make_admin(session_maker, telegram_id=41, role="admin")
+    res = await client.patch(
+        f"/api/employees/{admin.id}",
+        headers=auth_headers(admin),
+        json={"role": "hr"},
+    )
+    assert res.status_code == 403
+
+
+async def test_delete_employee_soft_deletes(
+    client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
+    super_admin = await make_admin(session_maker, telegram_id=50, role="super_admin")
+    target = await make_admin(session_maker, telegram_id=51, role="hr", with_login=False)
+    res = await client.delete(f"/api/employees/{target.id}", headers=auth_headers(super_admin))
+    assert res.status_code == 200
+    assert res.json()["is_active"] is False
+
+
+async def test_delete_self_blocked(client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]) -> None:
+    super_admin = await make_admin(session_maker, telegram_id=52, role="super_admin")
+    res = await client.delete(f"/api/employees/{super_admin.id}", headers=auth_headers(super_admin))
+    assert res.status_code == 403
+
+
+async def test_admin_cannot_delete_super_admin(
+    client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
+    admin = await make_admin(session_maker, telegram_id=53, role="admin")
+    target_super = await make_admin(session_maker, telegram_id=54, role="super_admin")
+    res = await client.delete(f"/api/employees/{target_super.id}", headers=auth_headers(admin))
+    assert res.status_code == 403
+
+
+async def test_hr_login_rejected_even_with_correct_password(
+    client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
+    await make_admin(session_maker, telegram_id=60, role="hr", with_login=True)
+    res = await client.post(
+        "/api/auth/login",
+        json={"username": "user60", "password": "Passw0rd!"},
+    )
+    assert res.status_code == 403
+
+
+async def test_admin_login_succeeds(client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]) -> None:
+    await make_admin(session_maker, telegram_id=61, role="admin", with_login=True)
+    res = await client.post(
+        "/api/auth/login",
+        json={"username": "user61", "password": "Passw0rd!"},
+    )
+    assert res.status_code == 200
+    assert res.json()["role"] == "admin"

@@ -46,6 +46,7 @@ class PositionCreate(BaseModel):
 
 
 class PositionUpdate(BaseModel):
+    category_id: int | None = None
     name_uz: str | None = None
     name_ru: str | None = None
     sort_order: int | None = None
@@ -61,6 +62,15 @@ class ApplicationListItem(BaseModel):
     position_name: str
     submitted_at: dt.datetime | None
     created_at: dt.datetime
+
+
+class StatusHistoryItem(BaseModel):
+    id: int
+    old_status: str | None
+    new_status: str
+    comment: str | None
+    changed_by_name: str | None
+    changed_at: dt.datetime
 
 
 class ApplicationDetail(BaseModel):
@@ -84,6 +94,7 @@ class ApplicationDetail(BaseModel):
     source: str | None
     submitted_at: dt.datetime | None
     created_at: dt.datetime
+    status_history: list[StatusHistoryItem] = []
 
 
 class ApplicationListResponse(BaseModel):
@@ -108,6 +119,30 @@ class BotTextOut(BaseModel):
 class BotTextUpdate(BaseModel):
     text_uz: str | None = None
     text_ru: str | None = None
+
+
+class EmployeeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    full_name: str | None
+    phone: str | None
+    telegram_id: int
+    role: str
+    is_active: bool
+
+
+class EmployeeCreate(BaseModel):
+    full_name: str | None = None
+    phone: str | None = None
+    telegram_id: int
+    role: str
+
+
+class EmployeeUpdate(BaseModel):
+    full_name: str | None = None
+    phone: str | None = None
+    role: str | None = None
+    is_active: bool | None = None
 
 
 class StatsSummary(BaseModel):

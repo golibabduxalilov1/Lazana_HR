@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from admin_panel.deps import get_current_admin, get_session, require_roles
 from admin_panel.schemas import PositionCreate, PositionOut, PositionUpdate
-from app.db.models import Admin, Position
+from app.db.models import Admin, Application, Position
 
 router = APIRouter(prefix="/api/positions", tags=["positions"])
 
@@ -28,7 +28,7 @@ async def list_positions(
 async def create_position(
     payload: PositionCreate,
     session: AsyncSession = Depends(get_session),
-    _admin: Admin = Depends(require_roles("super_admin")),
+    _admin: Admin = Depends(require_roles("super_admin", "admin")),
 ) -> PositionOut:
     position = Position(**payload.model_dump())
     session.add(position)
@@ -42,7 +42,7 @@ async def update_position(
     position_id: int,
     payload: PositionUpdate,
     session: AsyncSession = Depends(get_session),
-    _admin: Admin = Depends(require_roles("super_admin")),
+    _admin: Admin = Depends(require_roles("super_admin", "admin")),
 ) -> PositionOut:
     position = await session.get(Position, position_id)
     if position is None:
@@ -54,3 +54,26 @@ async def update_position(
     await session.commit()
     await session.refresh(position)
     return PositionOut.model_validate(position)
+
+
+@router.delete("/{position_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_position(
+    position_id: int,
+    session: AsyncSession = Depends(get_session),
+    _admin: Admin = Depends(require_roles("super_admin", "admin")),
+) -> None:
+    position = await session.get(Position, position_id)
+    if position is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Lavozim topilmadi")
+
+    has_applications = await session.scalar(
+        select(Application.id).where(Application.position_id == position_id).limit(1)
+    )
+    if has_applications is not None:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Bu lavozimga arizalar mavjud, uni o'chirib bo'lmaydi. Nofaollashtiring.",
+        )
+
+    await session.delete(position)
+    await session.commit()

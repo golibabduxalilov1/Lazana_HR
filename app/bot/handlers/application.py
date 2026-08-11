@@ -472,6 +472,5 @@ async def cb_confirm_submit(
     await callback.message.answer(thanks_text, reply_markup=main_menu_keyboard(lang))
     await callback.answer()
 
-    settings = get_settings()
-    await notify_hr(bot, settings.hr_notify_chat_id, application, position, category)
+    await notify_hr(bot, session, application, position, category)
     logger.info("Yangi ariza qabul qilindi: application_id=%s user_id=%s", application.id, db_user.id)

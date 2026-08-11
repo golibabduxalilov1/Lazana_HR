@@ -133,11 +133,13 @@ class Admin(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
     full_name: Mapped[str | None] = mapped_column(String(255))
-    role: Mapped[str] = mapped_column(String(20), nullable=False, default="hr")  # super_admin | hr | viewer
+    phone: Mapped[str | None] = mapped_column(String(20))
+    role: Mapped[str] = mapped_column(String(20), nullable=False, default="hr")  # super_admin | admin | hr
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    # Web admin panel login (ixtiyoriy — faqat web panelga kiradigan adminlar uchun to'ldiriladi)
+    # Web admin panel login (ixtiyoriy — faqat web panelga kiradigan super_admin/admin uchun
+    # to'ldiriladi; HR uchun har doim NULL bo'lishi kerak, chunki HR web panelga kira olmaydi)
     username: Mapped[str | None] = mapped_column(String(100), unique=True)
     password_hash: Mapped[str | None] = mapped_column(String(255))
 

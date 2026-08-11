@@ -51,7 +51,7 @@ MENU_STATS = "📊 Statistika"
 MENU_EXPORT = "📤 Eksport (CSV)"
 MENU_POSITIONS = "🏷 Lavozimlar"
 MENU_TEXTS = "📝 Matnlar"
-MENU_ADMINS = "👤 Adminlar"
+MENU_ADMINS = "👤 Xodimlar"
 BTN_BACK = "⬅️ Orqaga"
 
 
@@ -101,13 +101,24 @@ async def cb_admin_root(callback: CallbackQuery, admin: Admin, state: FSMContext
 # ---------------------------------------------------------------------------
 
 async def render_apps_list(
-    target: Message | CallbackQuery, session: AsyncSession, status_filter: str, page: int
+    target: Message | CallbackQuery,
+    session: AsyncSession,
+    status_filter: str,
+    page: int,
+    category_code: str = "all",
 ) -> None:
     query = select(Application).order_by(Application.created_at.desc())
     if status_filter != "all":
         query = query.where(Application.status == status_filter)
     else:
         query = query.where(Application.status != "draft")
+
+    if category_code != "all":
+        query = (
+            query.join(Position, Application.position_id == Position.id)
+            .join(PositionCategory, Position.category_id == PositionCategory.id)
+            .where(PositionCategory.code == category_code)
+        )
 
     count_query = select(func.count()).select_from(query.subquery())
     total = await session.scalar(count_query) or 0
@@ -116,7 +127,9 @@ async def render_apps_list(
     applications = list(await session.scalars(query))
 
     title_filter = STATUS_LABELS.get(status_filter, "Barchasi") if status_filter != "all" else "Barchasi"
-    lines = [f"📋 Arizalar ({title_filter}) — jami: {total}"]
+    categories = await _load_categories(session)
+    cat_label = next((c.name_uz for c in categories if c.code == category_code), "Barchasi")
+    lines = [f"📋 Arizalar ({title_filter} · {cat_label}) — jami: {total}"]
     rows = []
     for app_ in applications:
         position = await session.get(Position, app_.position_id)
@@ -126,18 +139,33 @@ async def render_apps_list(
     filter_row = [
         InlineKeyboardButton(
             text=("• " if s == status_filter else "") + STATUS_LABELS.get(s, "Barchasi"),
-            callback_data=f"adm:apps:{s}:1",
+            callback_data=f"adm:apps:{s}:1:{category_code}",
         )
         for s in STATUS_FILTERS
     ]
     rows.append(filter_row[:3])
     rows.append(filter_row[3:])
 
+    cat_row = [
+        InlineKeyboardButton(
+            text=("• " if category_code == "all" else "") + "Barchasi",
+            callback_data=f"adm:apps:{status_filter}:1:all",
+        )
+    ]
+    for c in categories:
+        cat_row.append(
+            InlineKeyboardButton(
+                text=("• " if category_code == c.code else "") + c.code,
+                callback_data=f"adm:apps:{status_filter}:1:{c.code}",
+            )
+        )
+    rows.append(cat_row)
+
     nav = []
     if page > 1:
-        nav.append(InlineKeyboardButton(text="⬅️", callback_data=f"adm:apps:{status_filter}:{page - 1}"))
+        nav.append(InlineKeyboardButton(text="⬅️", callback_data=f"adm:apps:{status_filter}:{page - 1}:{category_code}"))
     if page * PAGE_SIZE < total:
-        nav.append(InlineKeyboardButton(text="➡️", callback_data=f"adm:apps:{status_filter}:{page + 1}"))
+        nav.append(InlineKeyboardButton(text="➡️", callback_data=f"adm:apps:{status_filter}:{page + 1}:{category_code}"))
     if nav:
         rows.append(nav)
 
@@ -153,8 +181,10 @@ async def msg_apps_list(message: Message, session: AsyncSession, admin: Admin) -
 
 @router.callback_query(F.data.startswith("adm:apps:"))
 async def cb_apps_list(callback: CallbackQuery, session: AsyncSession, admin: Admin) -> None:
-    _, _, status_filter, page_str = callback.data.split(":")
-    await render_apps_list(callback, session, status_filter, int(page_str))
+    parts = callback.data.split(":")
+    _, _, status_filter, page_str = parts[:4]
+    category_code = parts[4] if len(parts) > 4 else "all"
+    await render_apps_list(callback, session, status_filter, int(page_str), category_code)
 
 
 def format_application_detail(app_: Application, position: Position, category: PositionCategory) -> str:
@@ -211,7 +241,7 @@ async def cb_app_detail(callback: CallbackQuery, session: AsyncSession, admin: A
                     )
                 ]
             )
-    rows.append([InlineKeyboardButton(text="⬅️ Ro'yxatga qaytish", callback_data="adm:apps:all:1")])
+    rows.append([InlineKeyboardButton(text="⬅️ Ro'yxatga qaytish", callback_data="adm:apps:all:1:all")])
 
     await send_or_edit(callback, text, InlineKeyboardMarkup(inline_keyboard=rows))
 
@@ -652,17 +682,18 @@ async def render_admins_list(target: Message | CallbackQuery, session: AsyncSess
     rows = []
     for a in admins:
         mark = "✅" if a.is_active else "🚫"
+        phone_part = f" — {a.phone}" if a.phone else ""
         rows.append(
             [
                 InlineKeyboardButton(
-                    text=f"{mark} {a.full_name or a.telegram_id} ({a.role})",
+                    text=f"{mark} {a.full_name or a.telegram_id}{phone_part} ({a.role})",
                     callback_data=f"adm:admintoggle:{a.id}",
                 )
             ]
         )
-    rows.append([InlineKeyboardButton(text="➕ Admin qo'shish", callback_data="adm:adminadd")])
+    rows.append([InlineKeyboardButton(text="➕ Xodim qo'shish", callback_data="adm:adminadd")])
     rows.append([InlineKeyboardButton(text="⬅️ Orqaga", callback_data="adm:root")])
-    await send_or_edit(target, "Adminlar ro'yxati (bosilsa faol/nofaol almashadi):", InlineKeyboardMarkup(inline_keyboard=rows))
+    await send_or_edit(target, "Xodimlar ro'yxati (bosilsa faol/nofaol almashadi):", InlineKeyboardMarkup(inline_keyboard=rows))
 
 
 @router.message(F.text == MENU_ADMINS)
@@ -683,9 +714,27 @@ async def cb_admin_toggle(callback: CallbackQuery, session: AsyncSession, admin:
     if target.id == admin.id:
         await callback.answer("O'zingizni o'chira olmaysiz.", show_alert=True)
         return
+    if admin.role == "admin" and target.role == "super_admin":
+        await callback.answer("Superadmin hisobini o'zgartira olmaysiz.", show_alert=True)
+        return
     target.is_active = not target.is_active
     await session.commit()
     await render_admins_list(callback, session)
+
+
+ADMIN_ROLE_OPTIONS = [("super_admin", "Super Admin"), ("admin", "Admin"), ("hr", "HR")]
+
+
+def _assignable_role_options(admin: Admin) -> list[tuple[str, str]]:
+    if admin.role == "super_admin":
+        return ADMIN_ROLE_OPTIONS
+    return [o for o in ADMIN_ROLE_OPTIONS if o[0] != "super_admin"]
+
+
+def admin_role_kb(admin: Admin) -> ReplyKeyboardMarkup:
+    rows = [[label] for _, label in _assignable_role_options(admin)]
+    rows.append([BTN_BACK])
+    return _reply_kb(rows)
 
 
 @router.callback_query(F.data == "adm:adminadd")
@@ -694,12 +743,12 @@ async def cb_admin_add_start(callback: CallbackQuery, state: FSMContext, admin: 
         await callback.answer(NO_PERMISSION_TEXT, show_alert=True)
         return
     await state.set_state(AdminStates.adding_admin_id)
-    await callback.message.answer("Yangi admin (rol: hr) uchun Telegram ID raqamini yuboring:")
+    await callback.message.answer("Yangi xodim uchun Telegram ID raqamini yuboring:")
     await callback.answer()
 
 
 @router.message(AdminStates.adding_admin_id, F.text)
-async def msg_admin_add(message: Message, state: FSMContext, session: AsyncSession) -> None:
+async def msg_admin_add_id(message: Message, state: FSMContext, session: AsyncSession) -> None:
     raw = message.text.strip()
     if not raw.isdigit():
         await message.answer("❗ Telegram ID faqat raqamlardan iborat bo'lishi kerak. Qayta yuboring:")
@@ -709,9 +758,53 @@ async def msg_admin_add(message: Message, state: FSMContext, session: AsyncSessi
     if existing:
         existing.is_active = True
         await session.commit()
-        await message.answer("✅ Mavjud admin qayta faollashtirildi.")
-    else:
-        session.add(Admin(telegram_id=telegram_id, role="hr"))
-        await session.commit()
-        await message.answer(f"✅ Yangi admin qo'shildi (ID: {telegram_id}, rol: hr).")
+        await state.clear()
+        await message.answer("✅ Mavjud xodim qayta faollashtirildi.")
+        return
+    await state.update_data(new_admin_telegram_id=telegram_id)
+    await state.set_state(AdminStates.adding_admin_full_name)
+    await message.answer("Xodimning F.I.Sh.ini kiriting:")
+
+
+@router.message(AdminStates.adding_admin_full_name, F.text)
+async def msg_admin_add_full_name(message: Message, state: FSMContext) -> None:
+    await state.update_data(new_admin_full_name=message.text.strip()[:255])
+    await state.set_state(AdminStates.adding_admin_phone)
+    await message.answer("Telefon raqamini kiriting (yoki \"-\" deb yuboring):")
+
+
+@router.message(AdminStates.adding_admin_phone, F.text)
+async def msg_admin_add_phone(message: Message, state: FSMContext, admin: Admin) -> None:
+    phone = message.text.strip()
+    await state.update_data(new_admin_phone=None if phone == "-" else phone[:20])
+    await state.set_state(AdminStates.adding_admin_role)
+    await message.answer("Rolni tanlang:", reply_markup=admin_role_kb(admin))
+
+
+@router.message(AdminStates.adding_admin_role, F.text)
+async def msg_admin_add_role(message: Message, state: FSMContext, session: AsyncSession, admin: Admin) -> None:
+    text = (message.text or "").strip()
+    if text == BTN_BACK:
+        await state.clear()
+        await render_admin_menu(message, admin)
+        return
+
+    role = next((code for code, label in _assignable_role_options(admin) if label == text), None)
+    if role is None:
+        await message.answer("Iltimos, ro'yxatdan tanlang.", reply_markup=admin_role_kb(admin))
+        return
+
+    data = await state.get_data()
+    new_admin = Admin(
+        telegram_id=data["new_admin_telegram_id"],
+        full_name=data.get("new_admin_full_name"),
+        phone=data.get("new_admin_phone"),
+        role=role,
+    )
+    session.add(new_admin)
+    await session.commit()
     await state.clear()
+    await message.answer(
+        f"✅ Yangi xodim qo'shildi: {new_admin.full_name or new_admin.telegram_id} (rol: {role}).",
+        reply_markup=admin_menu_kb(admin),
+    )

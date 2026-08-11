@@ -24,7 +24,7 @@ async def update_text(
     key: str,
     payload: BotTextUpdate,
     session: AsyncSession = Depends(get_session),
-    _admin: Admin = Depends(require_roles("super_admin")),
+    _admin: Admin = Depends(require_roles("super_admin", "admin")),
 ) -> BotTextOut:
     row = await session.scalar(select(BotText).where(BotText.key == key))
     if row is None:

@@ -20,7 +20,7 @@ async def export_applications_csv(
     date_to: dt.date | None = None,
     status_filter: str | None = Query(default=None, alias="status"),
     session: AsyncSession = Depends(get_session),
-    _admin: Admin = Depends(require_roles("hr", "super_admin")),
+    _admin: Admin = Depends(require_roles("super_admin", "admin")),
 ) -> StreamingResponse:
     query = (
         select(Application, PositionCategory.name_uz, Position.name_uz)

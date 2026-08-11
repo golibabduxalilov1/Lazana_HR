@@ -13,6 +13,7 @@ from admin_panel.schemas import (
     ApplicationListResponse,
     CategoryOut,
     StatusChangeRequest,
+    StatusHistoryItem,
 )
 from app.db.models import Admin, Application, ApplicationStatusHistory, Position, PositionCategory
 
@@ -102,6 +103,26 @@ async def get_application(
     position = await session.get(Position, application.position_id)
     category = await session.get(PositionCategory, position.category_id)
 
+    history_rows = (
+        await session.execute(
+            select(ApplicationStatusHistory, Admin.full_name)
+            .outerjoin(Admin, ApplicationStatusHistory.changed_by == Admin.id)
+            .where(ApplicationStatusHistory.application_id == application_id)
+            .order_by(ApplicationStatusHistory.changed_at.desc())
+        )
+    ).all()
+    status_history = [
+        StatusHistoryItem(
+            id=h.id,
+            old_status=h.old_status,
+            new_status=h.new_status,
+            comment=h.comment,
+            changed_by_name=admin_name,
+            changed_at=h.changed_at,
+        )
+        for h, admin_name in history_rows
+    ]
+
     return ApplicationDetail(
         id=application.id,
         status=application.status,
@@ -123,7 +144,25 @@ async def get_application(
         source=application.source,
         submitted_at=application.submitted_at,
         created_at=application.created_at,
+        status_history=status_history,
     )
+
+
+@router.delete("/applications/{application_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_application(
+    application_id: int,
+    session: AsyncSession = Depends(get_session),
+    _admin: Admin = Depends(require_roles("super_admin", "admin")),
+) -> None:
+    application = await session.get(Application, application_id)
+    if application is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Ariza topilmadi")
+
+    await session.execute(
+        ApplicationStatusHistory.__table__.delete().where(ApplicationStatusHistory.application_id == application_id)
+    )
+    await session.delete(application)
+    await session.commit()
 
 
 @router.patch("/applications/{application_id}/status")
@@ -131,7 +170,7 @@ async def change_status(
     application_id: int,
     payload: StatusChangeRequest,
     session: AsyncSession = Depends(get_session),
-    admin: Admin = Depends(require_roles("hr", "super_admin")),
+    admin: Admin = Depends(require_roles("super_admin", "admin")),
 ) -> dict:
     application = await session.get(Application, application_id)
     if application is None:

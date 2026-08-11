@@ -15,6 +15,9 @@ from app.db.session import async_session_maker
 
 
 async def create_or_update(telegram_id: int, username: str, password: str, role: str, full_name: str | None) -> None:
+    if role == "hr":
+        raise SystemExit("HR xodimlari web admin panelga kira olmaydi — ularga username/parol berilmaydi.")
+
     async with async_session_maker() as session:
         admin = await session.scalar(select(Admin).where(Admin.telegram_id == telegram_id))
         if admin is None:
@@ -37,7 +40,7 @@ if __name__ == "__main__":
     parser.add_argument("--telegram-id", type=int, required=True)
     parser.add_argument("--username", type=str, required=True)
     parser.add_argument("--password", type=str, required=True)
-    parser.add_argument("--role", type=str, default="hr", choices=["super_admin", "hr", "viewer"])
+    parser.add_argument("--role", type=str, default="admin", choices=["super_admin", "admin", "hr"])
     parser.add_argument("--full-name", type=str, default=None)
     args = parser.parse_args()
 

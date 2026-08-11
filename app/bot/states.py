@@ -23,3 +23,6 @@ class AdminStates(StatesGroup):
     editing_text_uz = State()
     editing_text_ru = State()
     adding_admin_id = State()
+    adding_admin_full_name = State()
+    adding_admin_phone = State()
+    adding_admin_role = State()
