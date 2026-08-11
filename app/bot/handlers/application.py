@@ -13,16 +13,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.bot.handlers.menu import get_bot_text, show_main_menu
 from app.bot.keyboards import (
     category_keyboard,
+    category_label,
     choice_keyboard,
     confirm_keyboard,
     main_menu_keyboard,
     multiselect_keyboard,
     phone_request_keyboard,
+    position_label,
     positions_keyboard,
     remove_reply_keyboard,
     text_step_keyboard,
 )
-from app.bot.render import send_or_edit
 from app.bot.states import ApplicationStates
 from app.bot.steps import STEP_KEY_TO_CONFIRM_LABEL, Step, find_step, next_step, option_label
 from app.bot.texts import t
@@ -33,8 +34,6 @@ from app.services.notifications import notify_hr
 
 logger = logging.getLogger(__name__)
 router = Router(name="application")
-
-CATEGORY_LABEL_KEYS = {"A": "category_a", "B": "category_b", "S": "category_s"}
 
 
 # ---------------------------------------------------------------------------
@@ -60,13 +59,14 @@ async def load_active_positions(session: AsyncSession, category_id: int) -> list
 async def ask_step(msg_target: Message, state: FSMContext, lang: str, step: Step, answers: dict) -> None:
     prompt = t(lang, step.prompt_key)
 
-    if step.kind in ("text", "phone", "date"):
+    if step.kind == "phone":
+        await msg_target.answer(prompt, reply_markup=phone_request_keyboard(lang))
+        await state.update_data(current_step_key=step.key)
+    elif step.kind in ("text", "date"):
         await msg_target.answer(prompt, reply_markup=text_step_keyboard(lang))
-        if step.kind == "phone":
-            await msg_target.answer(t(lang, "btn_share_contact"), reply_markup=phone_request_keyboard(lang))
         await state.update_data(current_step_key=step.key)
     elif step.kind == "choice":
-        await msg_target.answer(prompt, reply_markup=choice_keyboard(lang, step.options or [], prefix=f"ans:{step.key}"))
+        await msg_target.answer(prompt, reply_markup=choice_keyboard(lang, step.options or []))
         await state.update_data(current_step_key=step.key)
     elif step.kind == "multiselect":
         selected = set(answers.get(step.key) or [])
@@ -119,11 +119,8 @@ async def show_confirmation(msg_target: Message, state: FSMContext, session: Asy
     position = await session.get(Position, data["position_id"])
 
     lines = [t(lang, "confirm_title"), ""]
-    cat_label_key = CATEGORY_LABEL_KEYS.get(category.code)
-    cat_label = t(lang, cat_label_key) if cat_label_key else category.name_uz
-    lines.append(f"{t(lang, 'confirm_category')}: {cat_label}")
-    pos_name = position.name_uz if lang == "uz" or not position.name_ru else position.name_ru
-    lines.append(f"{t(lang, 'confirm_position')}: {pos_name}")
+    lines.append(f"{t(lang, 'confirm_category')}: {category_label(lang, category)}")
+    lines.append(f"{t(lang, 'confirm_position')}: {position_label(lang, position)}")
 
     for key in order:
         if key == "languages_other":
@@ -138,7 +135,9 @@ async def show_confirmation(msg_target: Message, state: FSMContext, session: Asy
     await msg_target.answer("\n".join(lines), reply_markup=confirm_keyboard(lang))
 
 
-async def go_back_one_step(callback: CallbackQuery, state: FSMContext, session: AsyncSession, db_user: User) -> None:
+async def go_back_one_step(
+    event: Message | CallbackQuery, state: FSMContext, session: AsyncSession, db_user: User
+) -> None:
     """Oxirgi javob berilgan savolga qaytadi (filling_step va confirming holatlaridan chaqiriladi)."""
     lang = db_user.language
     data = await state.get_data()
@@ -146,34 +145,45 @@ async def go_back_one_step(callback: CallbackQuery, state: FSMContext, session: 
     answers = data.get("answers", {})
     question_set = data["question_set"]
 
+    target = event.message if isinstance(event, CallbackQuery) else event
+
     if not order:
         category = await session.get(PositionCategory, data["category_id"])
         positions = await load_active_positions(session, category.id)
         await state.set_state(ApplicationStates.choosing_position)
-        await send_or_edit(callback, t(lang, "position_prompt"), positions_keyboard(lang, positions))
+        await target.answer(t(lang, "position_prompt"), reply_markup=positions_keyboard(lang, positions))
+        if isinstance(event, CallbackQuery):
+            await event.answer()
         return
 
     popped_key = order.pop()
     answers.pop(popped_key, None)
     await state.update_data(order=order, answers=answers)
     await state.set_state(ApplicationStates.filling_step)
-    await callback.answer()
+    if isinstance(event, CallbackQuery):
+        await event.answer()
     step = find_step(question_set, popped_key)
-    await ask_step(callback.message, state, lang, step, answers)
+    await ask_step(target, state, lang, step, answers)
 
 
-async def cancel_application(callback: CallbackQuery, state: FSMContext, db_user: User) -> None:
+async def cancel_application(event: Message | CallbackQuery, state: FSMContext, db_user: User) -> None:
     await state.clear()
     lang = db_user.language
-    await send_or_edit(callback, t(lang, "application_cancelled"), main_menu_keyboard(lang))
+    text = t(lang, "application_cancelled")
+    kb = main_menu_keyboard(lang)
+    if isinstance(event, CallbackQuery):
+        await event.message.answer(text, reply_markup=kb)
+        await event.answer()
+    else:
+        await event.answer(text, reply_markup=kb)
 
 
 # ---------------------------------------------------------------------------
 # Kirish nuqtasi: "Hujjat topshirish"
 # ---------------------------------------------------------------------------
 
-@router.callback_query(F.data == "menu:apply")
-async def cb_menu_apply(callback: CallbackQuery, state: FSMContext, session: AsyncSession, db_user: User) -> None:
+@router.message(F.text.in_({t(lang, "menu_apply") for lang in ("uz", "ru")}))
+async def msg_menu_apply(message: Message, state: FSMContext, session: AsyncSession, db_user: User) -> None:
     lang = db_user.language
     settings = get_settings()
 
@@ -192,77 +202,76 @@ async def cb_menu_apply(callback: CallbackQuery, state: FSMContext, session: Asy
         if recent is not None:
             elapsed_hours = (dt.datetime.now(dt.timezone.utc) - recent.submitted_at).total_seconds() / 3600
             remaining = max(1, math.ceil(settings.reapply_cooldown_hours - elapsed_hours))
-            await callback.answer(t(lang, "cooldown_active", hours=remaining), show_alert=True)
+            await message.answer(t(lang, "cooldown_active", hours=remaining))
             return
 
     categories = await load_active_categories(session)
     await state.set_state(ApplicationStates.choosing_category)
     await state.update_data(answers={}, order=[])
-    await send_or_edit(callback, t(lang, "category_prompt"), category_keyboard(lang, categories))
+    await message.answer(t(lang, "category_prompt"), reply_markup=category_keyboard(lang, categories))
 
 
-@router.callback_query(ApplicationStates.choosing_category, F.data.in_({"nav:back", "nav:cancel"}))
-async def cb_category_nav(callback: CallbackQuery, state: FSMContext, db_user: User) -> None:
-    await state.clear()
-    await show_main_menu(callback, db_user.language)
-
-
-@router.callback_query(ApplicationStates.choosing_category, F.data.startswith("cat:"))
-async def cb_category_selected(callback: CallbackQuery, state: FSMContext, session: AsyncSession, db_user: User) -> None:
+@router.message(ApplicationStates.choosing_category, F.text)
+async def msg_category_selected(
+    message: Message, state: FSMContext, session: AsyncSession, db_user: User
+) -> None:
     lang = db_user.language
-    code = callback.data.split(":", 1)[1]
-    category = await session.scalar(
-        select(PositionCategory).where(PositionCategory.code == code, PositionCategory.is_active.is_(True))
-    )
+    text = (message.text or "").strip()
+
+    if text in (t(lang, "btn_back"), t(lang, "btn_cancel")):
+        await state.clear()
+        await show_main_menu(message, lang)
+        return
+
+    categories = await load_active_categories(session)
+    category = next((c for c in categories if category_label(lang, c) == text), None)
     if category is None:
-        await callback.answer(t(lang, "err_generic_choice"), show_alert=True)
+        await message.answer(t(lang, "err_generic_choice"), reply_markup=category_keyboard(lang, categories))
         return
 
     positions = await load_active_positions(session, category.id)
     if not positions:
         await state.clear()
-        await send_or_edit(callback, t(lang, "no_positions"), main_menu_keyboard(lang))
+        await message.answer(t(lang, "no_positions"), reply_markup=main_menu_keyboard(lang))
         return
 
     await state.update_data(category_code=category.code, category_id=category.id, question_set=category.question_set)
     await state.set_state(ApplicationStates.choosing_position)
-    await send_or_edit(callback, t(lang, "position_prompt"), positions_keyboard(lang, positions))
+    await message.answer(t(lang, "position_prompt"), reply_markup=positions_keyboard(lang, positions))
 
 
 # ---------------------------------------------------------------------------
 # Lavozim tanlash
 # ---------------------------------------------------------------------------
 
-@router.callback_query(ApplicationStates.choosing_position, F.data == "nav:back")
-async def cb_position_back(callback: CallbackQuery, state: FSMContext, session: AsyncSession, db_user: User) -> None:
+@router.message(ApplicationStates.choosing_position, F.text)
+async def msg_position_selected(
+    message: Message, state: FSMContext, session: AsyncSession, db_user: User
+) -> None:
     lang = db_user.language
-    categories = await load_active_categories(session)
-    await state.set_state(ApplicationStates.choosing_category)
-    await send_or_edit(callback, t(lang, "category_prompt"), category_keyboard(lang, categories))
+    text = (message.text or "").strip()
 
+    if text == t(lang, "btn_cancel"):
+        await cancel_application(message, state, db_user)
+        return
+    if text == t(lang, "btn_back"):
+        categories = await load_active_categories(session)
+        await state.set_state(ApplicationStates.choosing_category)
+        await message.answer(t(lang, "category_prompt"), reply_markup=category_keyboard(lang, categories))
+        return
 
-@router.callback_query(ApplicationStates.choosing_position, F.data == "nav:cancel")
-async def cb_position_cancel(callback: CallbackQuery, state: FSMContext, db_user: User) -> None:
-    await cancel_application(callback, state, db_user)
-
-
-@router.callback_query(ApplicationStates.choosing_position, F.data.startswith("pos:"))
-async def cb_position_selected(callback: CallbackQuery, state: FSMContext, session: AsyncSession, db_user: User) -> None:
-    lang = db_user.language
-    position_id = int(callback.data.split(":", 1)[1])
     data = await state.get_data()
-
-    position = await session.get(Position, position_id)
-    if position is None or not position.is_active or position.category_id != data.get("category_id"):
-        await callback.answer(t(lang, "err_generic_choice"), show_alert=True)
+    positions = await load_active_positions(session, data.get("category_id"))
+    position = next((p for p in positions if position_label(lang, p) == text), None)
+    if position is None:
+        await message.answer(t(lang, "err_generic_choice"), reply_markup=positions_keyboard(lang, positions))
         return
 
     await state.update_data(position_id=position.id, answers={}, order=[])
     await state.set_state(ApplicationStates.filling_step)
-    await callback.answer()
 
     step = next_step(data["question_set"], {}, [])
-    await ask_step(callback.message, state, lang, step, {})
+    await ask_step(message, state, lang, step, {})
 
 
 # ---------------------------------------------------------------------------
@@ -280,58 +289,46 @@ async def cb_fill_back(callback: CallbackQuery, state: FSMContext, session: Asyn
 
 
 @router.callback_query(ApplicationStates.filling_step, F.data.startswith("ans:"))
-async def cb_answer_choice(callback: CallbackQuery, state: FSMContext, session: AsyncSession, db_user: User) -> None:
+async def cb_multiselect_toggle(callback: CallbackQuery, state: FSMContext, session: AsyncSession, db_user: User) -> None:
+    """Faqat ko'p tanlovli (multiselect) savollar uchun — bitta xabar ichida ✅ belgilanadi."""
     lang = db_user.language
     _, step_key, value = callback.data.split(":", 2)
     data = await state.get_data()
     question_set = data["question_set"]
     step = find_step(question_set, step_key)
 
-    if step is None or data.get("current_step_key") != step_key:
+    if step is None or step.kind != "multiselect" or data.get("current_step_key") != step_key:
         await callback.answer()
         return
 
     answers = data.get("answers", {})
     order = data.get("order", [])
+    selected = set(data.get("ms_selected") or [])
 
-    if step.kind == "choice":
-        valid_values = {v for v, _ in (step.options or [])}
-        if value not in valid_values:
-            await callback.answer(t(lang, "err_generic_choice"), show_alert=True)
+    if value == "done":
+        if not selected:
+            await callback.answer(t(lang, "err_languages_empty"), show_alert=True)
             return
-        answers[step.key] = value
+        answers[step.key] = sorted(selected)
         order.append(step.key)
-        await state.update_data(answers=answers, order=order)
+        await state.update_data(answers=answers, order=order, ms_selected=[])
         await callback.answer()
         await advance(callback.message, state, session, db_user)
         return
 
-    if step.kind == "multiselect":
-        selected = set(data.get("ms_selected") or [])
-        if value == "done":
-            if not selected:
-                await callback.answer(t(lang, "err_languages_empty"), show_alert=True)
-                return
-            answers[step.key] = sorted(selected)
-            order.append(step.key)
-            await state.update_data(answers=answers, order=order, ms_selected=[])
-            await callback.answer()
-            await advance(callback.message, state, session, db_user)
-            return
-
-        valid_values = {v for v, _ in (step.options or [])}
-        if value not in valid_values:
-            await callback.answer()
-            return
-        if value in selected:
-            selected.discard(value)
-        else:
-            selected.add(value)
-        await state.update_data(ms_selected=list(selected))
-        await callback.message.edit_reply_markup(
-            reply_markup=multiselect_keyboard(lang, step.options or [], selected, prefix=f"ans:{step.key}")
-        )
+    valid_values = {v for v, _ in (step.options or [])}
+    if value not in valid_values:
         await callback.answer()
+        return
+    if value in selected:
+        selected.discard(value)
+    else:
+        selected.add(value)
+    await state.update_data(ms_selected=list(selected))
+    await callback.message.edit_reply_markup(
+        reply_markup=multiselect_keyboard(lang, step.options or [], selected, prefix=f"ans:{step.key}")
+    )
+    await callback.answer()
 
 
 @router.message(ApplicationStates.filling_step, F.contact)
@@ -347,7 +344,7 @@ async def msg_answer_contact(message: Message, state: FSMContext, session: Async
         raw_phone = "+" + raw_phone
     result = validate_phone(raw_phone)
     if not result.ok:
-        await message.answer(t(lang, "err_phone"), reply_markup=text_step_keyboard(lang))
+        await message.answer(t(lang, "err_phone"), reply_markup=phone_request_keyboard(lang))
         return
 
     answers = data.get("answers", {})
@@ -362,13 +359,35 @@ async def msg_answer_contact(message: Message, state: FSMContext, session: Async
 @router.message(ApplicationStates.filling_step, F.text, ~F.text.startswith("/"))
 async def msg_answer_text(message: Message, state: FSMContext, session: AsyncSession, db_user: User) -> None:
     lang = db_user.language
+    text = (message.text or "").strip()
+
+    if text == t(lang, "btn_cancel"):
+        await cancel_application(message, state, db_user)
+        return
+    if text == t(lang, "btn_back"):
+        await go_back_one_step(message, state, session, db_user)
+        return
+
     settings = get_settings()
     data = await state.get_data()
     step_key = data.get("current_step_key")
     step = find_step(data["question_set"], step_key) if step_key else None
 
-    if step is None or step.kind not in ("text", "phone", "date"):
+    if step is None or step.kind not in ("text", "phone", "date", "choice"):
         await message.answer(t(lang, "unexpected_input"))
+        return
+
+    if step.kind == "choice":
+        value = next((v for v, label_key in (step.options or []) if t(lang, label_key) == text), None)
+        if value is None:
+            await message.answer(t(lang, "err_generic_choice"), reply_markup=choice_keyboard(lang, step.options or []))
+            return
+        answers = data.get("answers", {})
+        order = data.get("order", [])
+        answers[step.key] = value
+        order.append(step.key)
+        await state.update_data(answers=answers, order=order)
+        await advance(message, state, session, db_user)
         return
 
     raw = message.text or ""
@@ -380,7 +399,8 @@ async def msg_answer_text(message: Message, state: FSMContext, session: AsyncSes
         result = step.validator(raw)
 
     if not result.ok:
-        await message.answer(t(lang, result.error_key, **result.error_kwargs), reply_markup=text_step_keyboard(lang))
+        kb = phone_request_keyboard(lang) if step.kind == "phone" else text_step_keyboard(lang)
+        await message.answer(t(lang, result.error_key, **result.error_kwargs), reply_markup=kb)
         return
 
     answers = data.get("answers", {})
@@ -449,7 +469,8 @@ async def cb_confirm_submit(
     await state.clear()
 
     thanks_text = await get_bot_text(session, "thanks_message", lang, fallback_key="application_saved_thanks_fallback")
-    await send_or_edit(callback, thanks_text, main_menu_keyboard(lang))
+    await callback.message.answer(thanks_text, reply_markup=main_menu_keyboard(lang))
+    await callback.answer()
 
     settings = get_settings()
     await notify_hr(bot, settings.hr_notify_chat_id, application, position, category)

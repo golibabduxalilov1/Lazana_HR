@@ -11,75 +11,113 @@ from aiogram.types import (
 from app.bot.texts import t
 from app.db.models import Position, PositionCategory
 
+CATEGORY_LABEL_KEYS = {"A": "category_a", "B": "category_b", "S": "category_s"}
 
-def language_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text=t("uz", "btn_lang_uz"), callback_data="lang:uz")],
-            [InlineKeyboardButton(text=t("uz", "btn_lang_ru"), callback_data="lang:ru")],
+
+def category_label(lang: str, category: PositionCategory) -> str:
+    label_key = CATEGORY_LABEL_KEYS.get(category.code)
+    return t(lang, label_key) if label_key else (category.name_uz if lang == "uz" else category.name_ru)
+
+
+def position_label(lang: str, position: Position) -> str:
+    return position.name_uz if lang == "uz" or not position.name_ru else position.name_ru
+
+
+def _reply_kb(rows: list[list[str]]) -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[[KeyboardButton(text=label) for label in row] for row in rows if row],
+        resize_keyboard=True,
+    )
+
+
+def nav_labels(lang: str, include_back: bool = True, include_cancel: bool = True) -> list[str]:
+    row = []
+    if include_back:
+        row.append(t(lang, "btn_back"))
+    if include_cancel:
+        row.append(t(lang, "btn_cancel"))
+    return row
+
+
+# ---------------------------------------------------------------------------
+# Asosiy navigatsiya (Reply Keyboard)
+# ---------------------------------------------------------------------------
+
+def language_keyboard() -> ReplyKeyboardMarkup:
+    return _reply_kb([[t("uz", "btn_lang_uz")], [t("uz", "btn_lang_ru")]])
+
+
+def main_menu_keyboard(lang: str) -> ReplyKeyboardMarkup:
+    return _reply_kb(
+        [
+            [t(lang, "menu_about")],
+            [t(lang, "menu_apply")],
+            [t(lang, "menu_change_lang")],
         ]
     )
 
 
-def main_menu_keyboard(lang: str) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text=t(lang, "menu_about"), callback_data="menu:about")],
-            [InlineKeyboardButton(text=t(lang, "menu_apply"), callback_data="menu:apply")],
-            [InlineKeyboardButton(text=t(lang, "menu_change_lang"), callback_data="menu:lang")],
-        ]
-    )
+def category_keyboard(lang: str, categories: list[PositionCategory]) -> ReplyKeyboardMarkup:
+    rows = [[category_label(lang, cat)] for cat in categories]
+    nav = nav_labels(lang, include_back=True, include_cancel=True)
+    if nav:
+        rows.append(nav)
+    return _reply_kb(rows)
 
 
-def back_to_menu_keyboard(lang: str) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text=t(lang, "btn_to_menu"), callback_data="menu:root")]]
-    )
+def positions_keyboard(lang: str, positions: list[Position]) -> ReplyKeyboardMarkup:
+    rows = [[position_label(lang, pos)] for pos in positions]
+    nav = nav_labels(lang, include_back=True, include_cancel=True)
+    if nav:
+        rows.append(nav)
+    return _reply_kb(rows)
 
 
-def nav_row(lang: str, include_back: bool = True, include_cancel: bool = True) -> list[InlineKeyboardButton]:
+def choice_keyboard(lang: str, options: list[tuple[str, str]], columns: int = 1) -> ReplyKeyboardMarkup:
+    rows: list[list[str]] = []
+    row: list[str] = []
+    for _, label_key in options:
+        row.append(t(lang, label_key))
+        if len(row) == columns:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    nav = nav_labels(lang)
+    if nav:
+        rows.append(nav)
+    return _reply_kb(rows)
+
+
+def text_step_keyboard(lang: str, include_back: bool = True) -> ReplyKeyboardMarkup:
+    nav = nav_labels(lang, include_back=include_back)
+    return _reply_kb([nav])
+
+
+def phone_request_keyboard(lang: str, include_back: bool = True) -> ReplyKeyboardMarkup:
+    rows = [[KeyboardButton(text=t(lang, "btn_share_contact"), request_contact=True)]]
+    nav = nav_labels(lang, include_back=include_back)
+    if nav:
+        rows.append([KeyboardButton(text=label) for label in nav])
+    return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
+
+
+def remove_reply_keyboard() -> ReplyKeyboardRemove:
+    return ReplyKeyboardRemove()
+
+
+# ---------------------------------------------------------------------------
+# Inline Keyboard — faqat bitta xabarga bog'liq harakatlar uchun:
+# ko'p tanlovni belgilash (bir xabar ichida ✅ almashtiriladi) va yakuniy tasdiqlash.
+# ---------------------------------------------------------------------------
+
+def _inline_nav_row(lang: str, include_back: bool = True, include_cancel: bool = True) -> list[InlineKeyboardButton]:
     row = []
     if include_back:
         row.append(InlineKeyboardButton(text=t(lang, "btn_back"), callback_data="nav:back"))
     if include_cancel:
         row.append(InlineKeyboardButton(text=t(lang, "btn_cancel"), callback_data="nav:cancel"))
     return row
-
-
-def category_keyboard(lang: str, categories: list[PositionCategory]) -> InlineKeyboardMarkup:
-    rows = []
-    label_by_code = {"A": "category_a", "B": "category_b", "S": "category_s"}
-    for cat in categories:
-        label_key = label_by_code.get(cat.code)
-        label = t(lang, label_key) if label_key else (cat.name_uz if lang == "uz" else cat.name_ru)
-        rows.append([InlineKeyboardButton(text=label, callback_data=f"cat:{cat.code}")])
-    rows.append(nav_row(lang, include_back=True, include_cancel=True))
-    return InlineKeyboardMarkup(inline_keyboard=rows)
-
-
-def positions_keyboard(lang: str, positions: list[Position]) -> InlineKeyboardMarkup:
-    rows = []
-    for pos in positions:
-        name = pos.name_uz if lang == "uz" or not pos.name_ru else pos.name_ru
-        rows.append([InlineKeyboardButton(text=name, callback_data=f"pos:{pos.id}")])
-    rows.append(nav_row(lang, include_back=True, include_cancel=True))
-    return InlineKeyboardMarkup(inline_keyboard=rows)
-
-
-def choice_keyboard(
-    lang: str, options: list[tuple[str, str]], prefix: str, columns: int = 1
-) -> InlineKeyboardMarkup:
-    rows: list[list[InlineKeyboardButton]] = []
-    row: list[InlineKeyboardButton] = []
-    for value, label_key in options:
-        row.append(InlineKeyboardButton(text=t(lang, label_key), callback_data=f"{prefix}:{value}"))
-        if len(row) == columns:
-            rows.append(row)
-            row = []
-    if row:
-        rows.append(row)
-    rows.append(nav_row(lang))
-    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def multiselect_keyboard(
@@ -92,24 +130,8 @@ def multiselect_keyboard(
             [InlineKeyboardButton(text=f"{mark}{t(lang, label_key)}", callback_data=f"{prefix}:{value}")]
         )
     rows.append([InlineKeyboardButton(text=t(lang, "btn_done"), callback_data=f"{prefix}:done")])
-    rows.append(nav_row(lang))
+    rows.append(_inline_nav_row(lang))
     return InlineKeyboardMarkup(inline_keyboard=rows)
-
-
-def text_step_keyboard(lang: str, include_back: bool = True) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[nav_row(lang, include_back=include_back)])
-
-
-def phone_request_keyboard(lang: str) -> ReplyKeyboardMarkup:
-    return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text=t(lang, "btn_share_contact"), request_contact=True)]],
-        resize_keyboard=True,
-        one_time_keyboard=True,
-    )
-
-
-def remove_reply_keyboard() -> ReplyKeyboardRemove:
-    return ReplyKeyboardRemove()
 
 
 def confirm_keyboard(lang: str) -> InlineKeyboardMarkup:

@@ -16,7 +16,6 @@ T: dict[str, dict[str, str]] = {
     "btn_edit": {"uz": "✏️ Tahrirlash", "ru": "✏️ Редактировать"},
     "btn_done": {"uz": "✅ Tayyor", "ru": "✅ Готово"},
     "btn_share_contact": {"uz": "📱 Raqamni ulashish", "ru": "📱 Поделиться номером"},
-    "btn_to_menu": {"uz": "🏠 Asosiy menyu", "ru": "🏠 Главное меню"},
     "main_menu_title": {"uz": "Quyidagi bo'limlardan birini tanlang:", "ru": "Выберите один из разделов:"},
     "language_changed": {"uz": "Til o'zbek tiliga o'zgartirildi.", "ru": "Язык изменён на русский."},
     "choose_language": {"uz": "Tilni tanlang:", "ru": "Выберите язык:"},

@@ -5,11 +5,20 @@ import datetime as dt
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import BufferedInputFile, CallbackQuery, Message
+from aiogram.types import (
+    BufferedInputFile,
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    Message,
+    ReplyKeyboardMarkup,
+)
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.bot.filters import IsAdmin, can_configure, can_manage
+from app.bot.render import send_or_edit
 from app.bot.states import AdminStates
 from app.db.models import (
     Admin,
@@ -26,6 +35,7 @@ router.message.filter(IsAdmin())
 router.callback_query.filter(IsAdmin())
 
 PAGE_SIZE = 5
+NO_PERMISSION_TEXT = "Sizda bu amal uchun ruxsat yo'q."
 
 STATUS_LABELS = {
     "submitted": "🆕 Yuborilgan",
@@ -36,39 +46,42 @@ STATUS_LABELS = {
 STATUS_FILTERS = ["all", "submitted", "reviewed", "invited", "rejected"]
 NEXT_STATUS = {"submitted": ["reviewed"], "reviewed": ["invited", "rejected"]}
 
+MENU_APPS = "📋 Arizalar"
+MENU_STATS = "📊 Statistika"
+MENU_EXPORT = "📤 Eksport (CSV)"
+MENU_POSITIONS = "🏷 Lavozimlar"
+MENU_TEXTS = "📝 Matnlar"
+MENU_ADMINS = "👤 Adminlar"
+BTN_BACK = "⬅️ Orqaga"
 
-def admin_menu_kb(admin: Admin):
-    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-    rows = [
-        [InlineKeyboardButton(text="📋 Arizalar", callback_data="adm:apps:all:1")],
-        [InlineKeyboardButton(text="📊 Statistika", callback_data="adm:stats")],
-    ]
+def _reply_kb(rows: list[list[str]]) -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text=x) for x in row] for row in rows], resize_keyboard=True)
+
+
+def admin_menu_kb(admin: Admin) -> ReplyKeyboardMarkup:
+    rows = [[MENU_APPS], [MENU_STATS]]
     if can_manage(admin):
-        rows.append([InlineKeyboardButton(text="📤 Eksport (CSV)", callback_data="adm:export")])
+        rows.append([MENU_EXPORT])
     if can_configure(admin):
-        rows.append([InlineKeyboardButton(text="🏷 Lavozimlar", callback_data="adm:positions")])
-        rows.append([InlineKeyboardButton(text="📝 Matnlar", callback_data="adm:texts")])
-        rows.append([InlineKeyboardButton(text="👤 Adminlar", callback_data="adm:admins")])
-    return InlineKeyboardMarkup(inline_keyboard=rows)
+        rows.append([MENU_POSITIONS])
+        rows.append([MENU_TEXTS])
+        rows.append([MENU_ADMINS])
+    return _reply_kb(rows)
 
 
-def back_row(callback_data: str):
-    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-
+def back_row(callback_data: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="⬅️ Orqaga", callback_data=callback_data)]])
 
 
 async def render_admin_menu(target: Message | CallbackQuery, admin: Admin) -> None:
     text = f"🛠 Admin panel\nRol: {admin.role}"
+    kb = admin_menu_kb(admin)
     if isinstance(target, CallbackQuery):
-        try:
-            await target.message.edit_text(text, reply_markup=admin_menu_kb(admin))
-        except Exception:
-            await target.message.answer(text, reply_markup=admin_menu_kb(admin))
+        await target.message.answer(text, reply_markup=kb)
         await target.answer()
     else:
-        await target.answer(text, reply_markup=admin_menu_kb(admin))
+        await target.answer(text, reply_markup=kb)
 
 
 @router.message(Command("admin"))
@@ -84,15 +97,12 @@ async def cb_admin_root(callback: CallbackQuery, admin: Admin, state: FSMContext
 
 # ---------------------------------------------------------------------------
 # Arizalar ro'yxati va tafsiloti
+# (Sahifalash va filtr tugmalari — bitta xabar ichida, shu sababli Inline)
 # ---------------------------------------------------------------------------
 
-@router.callback_query(F.data.startswith("adm:apps:"))
-async def cb_apps_list(callback: CallbackQuery, session: AsyncSession, admin: Admin) -> None:
-    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-
-    _, _, status_filter, page_str = callback.data.split(":")
-    page = int(page_str)
-
+async def render_apps_list(
+    target: Message | CallbackQuery, session: AsyncSession, status_filter: str, page: int
+) -> None:
     query = select(Application).order_by(Application.created_at.desc())
     if status_filter != "all":
         query = query.where(Application.status == status_filter)
@@ -105,7 +115,8 @@ async def cb_apps_list(callback: CallbackQuery, session: AsyncSession, admin: Ad
     query = query.offset((page - 1) * PAGE_SIZE).limit(PAGE_SIZE)
     applications = list(await session.scalars(query))
 
-    lines = [f"📋 Arizalar ({STATUS_LABELS.get(status_filter, 'Barchasi') if status_filter != 'all' else 'Barchasi'}) — jami: {total}"]
+    title_filter = STATUS_LABELS.get(status_filter, "Barchasi") if status_filter != "all" else "Barchasi"
+    lines = [f"📋 Arizalar ({title_filter}) — jami: {total}"]
     rows = []
     for app_ in applications:
         position = await session.get(Position, app_.position_id)
@@ -132,11 +143,18 @@ async def cb_apps_list(callback: CallbackQuery, session: AsyncSession, admin: Ad
 
     rows.append([InlineKeyboardButton(text="🏠 Admin menyu", callback_data="adm:root")])
 
-    try:
-        await callback.message.edit_text("\n".join(lines), reply_markup=InlineKeyboardMarkup(inline_keyboard=rows))
-    except Exception:
-        await callback.message.answer("\n".join(lines), reply_markup=InlineKeyboardMarkup(inline_keyboard=rows))
-    await callback.answer()
+    await send_or_edit(target, "\n".join(lines), InlineKeyboardMarkup(inline_keyboard=rows))
+
+
+@router.message(F.text == MENU_APPS)
+async def msg_apps_list(message: Message, session: AsyncSession, admin: Admin) -> None:
+    await render_apps_list(message, session, "all", 1)
+
+
+@router.callback_query(F.data.startswith("adm:apps:"))
+async def cb_apps_list(callback: CallbackQuery, session: AsyncSession, admin: Admin) -> None:
+    _, _, status_filter, page_str = callback.data.split(":")
+    await render_apps_list(callback, session, status_filter, int(page_str))
 
 
 def format_application_detail(app_: Application, position: Position, category: PositionCategory) -> str:
@@ -172,8 +190,6 @@ def format_application_detail(app_: Application, position: Position, category: P
 
 @router.callback_query(F.data.startswith("adm:app:"))
 async def cb_app_detail(callback: CallbackQuery, session: AsyncSession, admin: Admin) -> None:
-    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-
     app_id = int(callback.data.split(":")[2])
     application = await session.get(Application, app_id)
     if application is None:
@@ -197,23 +213,17 @@ async def cb_app_detail(callback: CallbackQuery, session: AsyncSession, admin: A
             )
     rows.append([InlineKeyboardButton(text="⬅️ Ro'yxatga qaytish", callback_data="adm:apps:all:1")])
 
-    try:
-        await callback.message.edit_text(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=rows))
-    except Exception:
-        await callback.message.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=rows))
-    await callback.answer()
+    await send_or_edit(callback, text, InlineKeyboardMarkup(inline_keyboard=rows))
 
 
 @router.callback_query(F.data.startswith("adm:setstatus:"))
 async def cb_set_status_start(callback: CallbackQuery, state: FSMContext, admin: Admin) -> None:
     if not can_manage(admin):
-        await callback.answer("Sizda bu amal uchun ruxsat yo'q.", show_alert=True)
+        await callback.answer(NO_PERMISSION_TEXT, show_alert=True)
         return
     _, _, app_id_str, new_status = callback.data.split(":")
     await state.update_data(pending_app_id=int(app_id_str), pending_new_status=new_status)
     await state.set_state(AdminStates.entering_status_comment)
-
-    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
     kb = InlineKeyboardMarkup(
         inline_keyboard=[[InlineKeyboardButton(text="➡️ Izohsiz o'tkazish", callback_data="adm:skipcomment")]]
@@ -269,8 +279,7 @@ async def msg_status_comment(message: Message, state: FSMContext, session: Async
 # Statistika
 # ---------------------------------------------------------------------------
 
-@router.callback_query(F.data == "adm:stats")
-async def cb_stats(callback: CallbackQuery, session: AsyncSession) -> None:
+async def render_stats(target: Message | CallbackQuery, session: AsyncSession) -> None:
     total = await session.scalar(select(func.count()).select_from(Application).where(Application.status != "draft"))
 
     status_rows = await session.execute(
@@ -313,21 +322,19 @@ async def cb_stats(callback: CallbackQuery, session: AsyncSession) -> None:
     for name, count in cat_rows.all():
         lines.append(f"  {name}: {count}")
 
-    await callback.message.edit_text("\n".join(lines), reply_markup=back_row("adm:root"))
-    await callback.answer()
+    await send_or_edit(target, "\n".join(lines), back_row("adm:root"))
+
+
+@router.message(F.text == MENU_STATS)
+async def msg_stats(message: Message, session: AsyncSession, admin: Admin) -> None:
+    await render_stats(message, session)
 
 
 # ---------------------------------------------------------------------------
 # Eksport (CSV)
 # ---------------------------------------------------------------------------
 
-@router.callback_query(F.data == "adm:export")
-async def cb_export_menu(callback: CallbackQuery, admin: Admin) -> None:
-    if not can_manage(admin):
-        await callback.answer("Sizda bu amal uchun ruxsat yo'q.", show_alert=True)
-        return
-    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-
+async def render_export_menu(target: Message | CallbackQuery) -> None:
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="Oxirgi 7 kun", callback_data="adm:exportperiod:7")],
@@ -337,14 +344,21 @@ async def cb_export_menu(callback: CallbackQuery, admin: Admin) -> None:
             [InlineKeyboardButton(text="⬅️ Orqaga", callback_data="adm:root")],
         ]
     )
-    await callback.message.edit_text("Qaysi davr uchun eksport qilinsin?", reply_markup=kb)
-    await callback.answer()
+    await send_or_edit(target, "Qaysi davr uchun eksport qilinsin?", kb)
+
+
+@router.message(F.text == MENU_EXPORT)
+async def msg_export_menu(message: Message, admin: Admin) -> None:
+    if not can_manage(admin):
+        await message.answer(NO_PERMISSION_TEXT)
+        return
+    await render_export_menu(message)
 
 
 @router.callback_query(F.data.startswith("adm:exportperiod:"))
 async def cb_export_period(callback: CallbackQuery, session: AsyncSession, admin: Admin) -> None:
     if not can_manage(admin):
-        await callback.answer("Sizda bu amal uchun ruxsat yo'q.", show_alert=True)
+        await callback.answer(NO_PERMISSION_TEXT, show_alert=True)
         return
     period = callback.data.split(":")[2]
 
@@ -368,25 +382,77 @@ async def cb_export_period(callback: CallbackQuery, session: AsyncSession, admin
 
 # ---------------------------------------------------------------------------
 # Lavozimlarni boshqarish (faqat super_admin)
+# Yo'nalish tanlash — oddiy navigatsiya (Reply). Lavozimlar ro'yxati — har biri
+# bitta xabar ichida faol/nofaol almashtiriladi (Inline).
 # ---------------------------------------------------------------------------
 
-@router.callback_query(F.data == "adm:positions")
-async def cb_positions_categories(callback: CallbackQuery, session: AsyncSession, admin: Admin) -> None:
+async def _load_categories(session: AsyncSession) -> list[PositionCategory]:
+    return list(await session.scalars(select(PositionCategory).order_by(PositionCategory.sort_order)))
+
+
+def _category_label(category: PositionCategory) -> str:
+    return f"{category.code}) {category.name_uz}"
+
+
+def positions_category_kb(categories: list[PositionCategory]) -> ReplyKeyboardMarkup:
+    rows = [[_category_label(c)] for c in categories]
+    rows.append([BTN_BACK])
+    return _reply_kb(rows)
+
+
+async def send_positions_category_picker(
+    target: Message | CallbackQuery, state: FSMContext, session: AsyncSession
+) -> None:
+    categories = await _load_categories(session)
+    await state.set_state(AdminStates.choosing_position_category)
+    text = "Yo'nalishni tanlang:"
+    kb = positions_category_kb(categories)
+    if isinstance(target, CallbackQuery):
+        await target.message.answer(text, reply_markup=kb)
+        await target.answer()
+    else:
+        await target.answer(text, reply_markup=kb)
+
+
+@router.message(F.text == MENU_POSITIONS)
+async def msg_positions_menu(message: Message, state: FSMContext, session: AsyncSession, admin: Admin) -> None:
     if not can_configure(admin):
-        await callback.answer("Sizda bu amal uchun ruxsat yo'q.", show_alert=True)
+        await message.answer(NO_PERMISSION_TEXT)
         return
-    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-
-    categories = list(await session.scalars(select(PositionCategory).order_by(PositionCategory.sort_order)))
-    rows = [[InlineKeyboardButton(text=f"{c.code}) {c.name_uz}", callback_data=f"adm:poscat:{c.code}")] for c in categories]
-    rows.append([InlineKeyboardButton(text="⬅️ Orqaga", callback_data="adm:root")])
-    await callback.message.edit_text("Yo'nalishni tanlang:", reply_markup=InlineKeyboardMarkup(inline_keyboard=rows))
-    await callback.answer()
+    await send_positions_category_picker(message, state, session)
 
 
-async def render_positions_list(callback: CallbackQuery, session: AsyncSession, code: str) -> None:
-    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+@router.callback_query(F.data == "adm:positions")
+async def cb_positions_categories(
+    callback: CallbackQuery, state: FSMContext, session: AsyncSession, admin: Admin
+) -> None:
+    if not can_configure(admin):
+        await callback.answer(NO_PERMISSION_TEXT, show_alert=True)
+        return
+    await send_positions_category_picker(callback, state, session)
 
+
+@router.message(AdminStates.choosing_position_category, F.text)
+async def msg_position_category_selected(
+    message: Message, state: FSMContext, session: AsyncSession, admin: Admin
+) -> None:
+    text = (message.text or "").strip()
+    if text == BTN_BACK:
+        await state.clear()
+        await render_admin_menu(message, admin)
+        return
+
+    categories = await _load_categories(session)
+    category = next((c for c in categories if _category_label(c) == text), None)
+    if category is None:
+        await message.answer("Iltimos, ro'yxatdan tanlang.", reply_markup=positions_category_kb(categories))
+        return
+
+    await state.clear()
+    await render_positions_list(message, session, category.code)
+
+
+async def render_positions_list(target: Message | CallbackQuery, session: AsyncSession, code: str) -> None:
     category = await session.scalar(select(PositionCategory).where(PositionCategory.code == code))
     positions = list(
         await session.scalars(select(Position).where(Position.category_id == category.id).order_by(Position.sort_order))
@@ -399,42 +465,26 @@ async def render_positions_list(callback: CallbackQuery, session: AsyncSession, 
     rows.append([InlineKeyboardButton(text="➕ Yangi lavozim qo'shish", callback_data=f"adm:posadd:{code}")])
     rows.append([InlineKeyboardButton(text="⬅️ Orqaga", callback_data="adm:positions")])
 
-    try:
-        await callback.message.edit_text(
-            f"{category.name_uz} — lavozimlar (bosilsa faol/nofaol almashadi):",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
-        )
-    except Exception:
-        await callback.message.answer(
-            f"{category.name_uz} — lavozimlar (bosilsa faol/nofaol almashadi):",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
-        )
-
-
-@router.callback_query(F.data.startswith("adm:poscat:"))
-async def cb_positions_list(callback: CallbackQuery, session: AsyncSession, admin: Admin) -> None:
-    code = callback.data.split(":")[2]
-    await render_positions_list(callback, session, code)
-    await callback.answer()
+    text = f"{category.name_uz} — lavozimlar (bosilsa faol/nofaol almashadi):"
+    await send_or_edit(target, text, InlineKeyboardMarkup(inline_keyboard=rows))
 
 
 @router.callback_query(F.data.startswith("adm:postoggle:"))
 async def cb_position_toggle(callback: CallbackQuery, session: AsyncSession, admin: Admin) -> None:
     if not can_configure(admin):
-        await callback.answer("Sizda bu amal uchun ruxsat yo'q.", show_alert=True)
+        await callback.answer(NO_PERMISSION_TEXT, show_alert=True)
         return
     _, _, pos_id_str, code = callback.data.split(":")
     position = await session.get(Position, int(pos_id_str))
     position.is_active = not position.is_active
     await session.commit()
     await render_positions_list(callback, session, code)
-    await callback.answer()
 
 
 @router.callback_query(F.data.startswith("adm:posadd:"))
 async def cb_position_add_start(callback: CallbackQuery, state: FSMContext, admin: Admin) -> None:
     if not can_configure(admin):
-        await callback.answer("Sizda bu amal uchun ruxsat yo'q.", show_alert=True)
+        await callback.answer(NO_PERMISSION_TEXT, show_alert=True)
         return
     code = callback.data.split(":")[2]
     await state.update_data(new_position_category_code=code)
@@ -473,6 +523,8 @@ async def msg_position_name_ru(message: Message, state: FSMContext, session: Asy
 
 # ---------------------------------------------------------------------------
 # Matnlarni boshqarish (faqat super_admin)
+# Matn kaliti tanlash — oddiy navigatsiya (Reply). Tahrirlash ekrani — bitta
+# xabarga bog'liq harakatlar (Inline).
 # ---------------------------------------------------------------------------
 
 TEXT_LABELS = {
@@ -482,24 +534,57 @@ TEXT_LABELS = {
 }
 
 
-@router.callback_query(F.data == "adm:texts")
-async def cb_texts_list(callback: CallbackQuery, admin: Admin) -> None:
+def texts_list_kb() -> ReplyKeyboardMarkup:
+    rows = [[label] for label in TEXT_LABELS.values()]
+    rows.append([BTN_BACK])
+    return _reply_kb(rows)
+
+
+async def send_texts_list(target: Message | CallbackQuery, state: FSMContext) -> None:
+    await state.set_state(AdminStates.choosing_text_key)
+    text = "Tahrirlanadigan matnlar:"
+    kb = texts_list_kb()
+    if isinstance(target, CallbackQuery):
+        await target.message.answer(text, reply_markup=kb)
+        await target.answer()
+    else:
+        await target.answer(text, reply_markup=kb)
+
+
+@router.message(F.text == MENU_TEXTS)
+async def msg_texts_menu(message: Message, state: FSMContext, admin: Admin) -> None:
     if not can_configure(admin):
-        await callback.answer("Sizda bu amal uchun ruxsat yo'q.", show_alert=True)
+        await message.answer(NO_PERMISSION_TEXT)
         return
-    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-
-    rows = [[InlineKeyboardButton(text=label, callback_data=f"adm:text:{key}")] for key, label in TEXT_LABELS.items()]
-    rows.append([InlineKeyboardButton(text="⬅️ Orqaga", callback_data="adm:root")])
-    await callback.message.edit_text("Tahrirlanadigan matnlar:", reply_markup=InlineKeyboardMarkup(inline_keyboard=rows))
-    await callback.answer()
+    await send_texts_list(message, state)
 
 
-@router.callback_query(F.data.startswith("adm:text:"))
-async def cb_text_detail(callback: CallbackQuery, session: AsyncSession, admin: Admin) -> None:
-    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+@router.callback_query(F.data == "adm:texts")
+async def cb_texts_list(callback: CallbackQuery, state: FSMContext, admin: Admin) -> None:
+    if not can_configure(admin):
+        await callback.answer(NO_PERMISSION_TEXT, show_alert=True)
+        return
+    await send_texts_list(callback, state)
 
-    key = callback.data.split(":")[2]
+
+@router.message(AdminStates.choosing_text_key, F.text)
+async def msg_text_key_selected(message: Message, state: FSMContext, session: AsyncSession, admin: Admin) -> None:
+    text = (message.text or "").strip()
+    if text == BTN_BACK:
+        await state.clear()
+        await render_admin_menu(message, admin)
+        return
+
+    key = next((k for k, label in TEXT_LABELS.items() if label == text), None)
+    if key is None:
+        await message.answer("Iltimos, ro'yxatdan tanlang.", reply_markup=texts_list_kb())
+        return
+
+    await state.clear()
+    await render_text_detail(message, session, key)
+
+
+async def render_text_detail(target: Message | CallbackQuery, session: AsyncSession, key: str) -> None:
     row = await session.scalar(select(BotText).where(BotText.key == key))
     text = (
         f"🔑 {TEXT_LABELS.get(key, key)}\n\n"
@@ -513,14 +598,13 @@ async def cb_text_detail(callback: CallbackQuery, session: AsyncSession, admin: 
             [InlineKeyboardButton(text="⬅️ Orqaga", callback_data="adm:texts")],
         ]
     )
-    await callback.message.edit_text(text, reply_markup=kb)
-    await callback.answer()
+    await send_or_edit(target, text, kb)
 
 
 @router.callback_query(F.data.startswith("adm:textedit:"))
 async def cb_text_edit_start(callback: CallbackQuery, state: FSMContext, admin: Admin) -> None:
     if not can_configure(admin):
-        await callback.answer("Sizda bu amal uchun ruxsat yo'q.", show_alert=True)
+        await callback.answer(NO_PERMISSION_TEXT, show_alert=True)
         return
     _, _, key, lang = callback.data.split(":")
     await state.update_data(editing_text_key=key)
@@ -560,15 +644,10 @@ async def msg_text_edit_ru(message: Message, state: FSMContext, session: AsyncSe
 
 # ---------------------------------------------------------------------------
 # Adminlarni boshqarish (faqat super_admin)
+# Har bir qator bitta xabar ichida faol/nofaol almashtiriladi (Inline).
 # ---------------------------------------------------------------------------
 
-@router.callback_query(F.data == "adm:admins")
-async def cb_admins_list(callback: CallbackQuery, session: AsyncSession, admin: Admin) -> None:
-    if not can_configure(admin):
-        await callback.answer("Sizda bu amal uchun ruxsat yo'q.", show_alert=True)
-        return
-    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-
+async def render_admins_list(target: Message | CallbackQuery, session: AsyncSession) -> None:
     admins = list(await session.scalars(select(Admin).order_by(Admin.id)))
     rows = []
     for a in admins:
@@ -583,14 +662,21 @@ async def cb_admins_list(callback: CallbackQuery, session: AsyncSession, admin: 
         )
     rows.append([InlineKeyboardButton(text="➕ Admin qo'shish", callback_data="adm:adminadd")])
     rows.append([InlineKeyboardButton(text="⬅️ Orqaga", callback_data="adm:root")])
-    await callback.message.edit_text("Adminlar ro'yxati (bosilsa faol/nofaol almashadi):", reply_markup=InlineKeyboardMarkup(inline_keyboard=rows))
-    await callback.answer()
+    await send_or_edit(target, "Adminlar ro'yxati (bosilsa faol/nofaol almashadi):", InlineKeyboardMarkup(inline_keyboard=rows))
+
+
+@router.message(F.text == MENU_ADMINS)
+async def msg_admins_list(message: Message, session: AsyncSession, admin: Admin) -> None:
+    if not can_configure(admin):
+        await message.answer(NO_PERMISSION_TEXT)
+        return
+    await render_admins_list(message, session)
 
 
 @router.callback_query(F.data.startswith("adm:admintoggle:"))
 async def cb_admin_toggle(callback: CallbackQuery, session: AsyncSession, admin: Admin) -> None:
     if not can_configure(admin):
-        await callback.answer("Sizda bu amal uchun ruxsat yo'q.", show_alert=True)
+        await callback.answer(NO_PERMISSION_TEXT, show_alert=True)
         return
     target_id = int(callback.data.split(":")[2])
     target = await session.get(Admin, target_id)
@@ -599,13 +685,13 @@ async def cb_admin_toggle(callback: CallbackQuery, session: AsyncSession, admin:
         return
     target.is_active = not target.is_active
     await session.commit()
-    await cb_admins_list(callback, session, admin)
+    await render_admins_list(callback, session)
 
 
 @router.callback_query(F.data == "adm:adminadd")
 async def cb_admin_add_start(callback: CallbackQuery, state: FSMContext, admin: Admin) -> None:
     if not can_configure(admin):
-        await callback.answer("Sizda bu amal uchun ruxsat yo'q.", show_alert=True)
+        await callback.answer(NO_PERMISSION_TEXT, show_alert=True)
         return
     await state.set_state(AdminStates.adding_admin_id)
     await callback.message.answer("Yangi admin (rol: hr) uchun Telegram ID raqamini yuboring:")

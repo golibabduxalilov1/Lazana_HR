@@ -4,14 +4,33 @@ const STATUS_LABELS = {
   invited: "Taklif qilingan",
   rejected: "Rad etilgan",
 };
+const STATUS_TONE = {
+  submitted: { pill: "status-submitted", hex: "#3B82F6" },
+  reviewed: { pill: "status-reviewed", hex: "#F59E0B" },
+  invited: { pill: "status-invited", hex: "#10B981" },
+  rejected: { pill: "status-rejected", hex: "#EF4444" },
+};
+const ROLE_LABELS = { super_admin: "Super Admin", hr: "HR menejer", viewer: "Kuzatuvchi" };
 const NEXT_STATUS = { submitted: ["reviewed"], reviewed: ["invited", "rejected"] };
+const TAB_TITLES = { stats: "Statistika", applications: "Arizalar", positions: "Lavozimlar", texts: "Matnlar" };
 
 const state = {
   token: localStorage.getItem("lazana_token") || null,
   role: localStorage.getItem("lazana_role") || null,
+  fullName: localStorage.getItem("lazana_full_name") || null,
   categories: [],
   applicationsPage: 1,
 };
+
+function statusPill(status) {
+  const tone = STATUS_TONE[status] || { pill: "status-neutral" };
+  return el("span", { class: `status-pill ${tone.pill}` }, [el("span", { class: "dot" }), STATUS_LABELS[status] || status]);
+}
+
+function initials(name) {
+  if (!name) return "A";
+  return name.trim().split(/\s+/).slice(0, 2).map((p) => p[0].toUpperCase()).join("");
+}
 
 function el(tag, attrs = {}, children = []) {
   const node = document.createElement(tag);
@@ -49,8 +68,10 @@ async function api(path, opts = {}) {
 function logout() {
   state.token = null;
   state.role = null;
+  state.fullName = null;
   localStorage.removeItem("lazana_token");
   localStorage.removeItem("lazana_role");
+  localStorage.removeItem("lazana_full_name");
   document.getElementById("dashboard").classList.add("hidden");
   document.getElementById("login-screen").classList.remove("hidden");
 }
@@ -76,8 +97,11 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
     const res = await api("/api/auth/login", { method: "POST", body: JSON.stringify({ username, password }) });
     state.token = res.access_token;
     state.role = res.role;
+    state.fullName = res.full_name || null;
     localStorage.setItem("lazana_token", state.token);
     localStorage.setItem("lazana_role", state.role);
+    if (state.fullName) localStorage.setItem("lazana_full_name", state.fullName);
+    else localStorage.removeItem("lazana_full_name");
     await enterDashboard();
   } catch (err) {
     errorBox.textContent = err.message;
@@ -93,6 +117,7 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
     btn.classList.add("active");
     document.querySelectorAll(".tab-panel").forEach((p) => p.classList.add("hidden"));
     document.getElementById(`tab-${btn.dataset.tab}`).classList.remove("hidden");
+    document.getElementById("breadcrumb-current").textContent = TAB_TITLES[btn.dataset.tab] || btn.dataset.tab;
     if (btn.dataset.tab === "applications") loadApplications(1);
     if (btn.dataset.tab === "stats") loadStats();
     if (btn.dataset.tab === "positions") loadPositions();
@@ -103,10 +128,20 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
 async function enterDashboard() {
   document.getElementById("login-screen").classList.add("hidden");
   document.getElementById("dashboard").classList.remove("hidden");
-  document.getElementById("admin-role-badge").textContent = state.role;
+
+  const roleLabel = ROLE_LABELS[state.role] || state.role;
+  document.getElementById("admin-role-badge").textContent = roleLabel;
   document.getElementById("export-btn").style.display = state.role === "viewer" ? "none" : "inline-block";
+
+  const displayName = state.fullName || roleLabel;
+  const initialsText = initials(state.fullName || roleLabel);
+  for (const id of ["sidebar-avatar", "topbar-avatar"]) document.getElementById(id).textContent = initialsText;
+  document.getElementById("sidebar-user-name").textContent = displayName;
+  document.getElementById("sidebar-user-role").textContent = roleLabel;
+  document.getElementById("topbar-user-name").textContent = displayName;
+
   await loadCategories();
-  await loadApplications(1);
+  await loadStats();
 }
 
 async function loadCategories() {
@@ -155,7 +190,7 @@ async function loadApplications(page) {
       el("td", {}, item.full_name || "-"),
       el("td", {}, item.phone || "-"),
       el("td", {}, `${item.category_name} / ${item.position_name}`),
-      el("td", {}, el("span", { class: `status-pill status-${item.status}` }, STATUS_LABELS[item.status] || item.status)),
+      el("td", {}, statusPill(item.status)),
       el("td", {}, item.submitted_at ? new Date(item.submitted_at).toLocaleString("uz-UZ") : "-"),
     ]);
     tbody.append(row);
@@ -205,7 +240,7 @@ async function openApplicationDetail(id) {
   const container = el("div");
   container.append(el("h2", {}, `Ariza #${app.id} — ${app.category_name} / ${app.position_name}`));
   container.append(
-    el("div", { class: "field" }, [el("b", {}, "Holat"), el("span", { class: `status-pill status-${app.status}` }, STATUS_LABELS[app.status] || app.status)])
+    el("div", { class: "field" }, [el("b", {}, "Holat"), statusPill(app.status)])
   );
   for (const [key, label] of DETAIL_FIELDS) {
     let value = app[key];
@@ -242,23 +277,73 @@ async function changeStatus(id, newStatus) {
 }
 
 // --- Stats ---
+const ICONS = {
+  total: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>',
+  week: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
+  month: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+  category: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
+};
+
+function statCard(tone, icon, value, label) {
+  return el("div", { class: "card stat-card" }, [
+    el("div", { class: "stat-top" }, [el("div", { class: `icon-circle tone-${tone}`, html: icon })]),
+    el("div", { class: "value" }, String(value)),
+    el("div", { class: "label" }, label),
+  ]);
+}
+
 async function loadStats() {
   const data = await api("/api/stats/summary");
+
+  const badge = document.getElementById("applications-nav-badge");
+  const submittedCount = data.by_status.submitted || 0;
+  badge.textContent = String(submittedCount);
+  badge.classList.toggle("hidden", submittedCount === 0);
+
   const container = document.getElementById("stats-content");
   container.innerHTML = "";
   container.append(
-    el("div", { class: "stat-card" }, [el("div", { class: "value" }, String(data.total)), el("div", { class: "label" }, "Jami arizalar")]),
-    el("div", { class: "stat-card" }, [el("div", { class: "value" }, String(data.last_7_days)), el("div", { class: "label" }, "Oxirgi 7 kun")]),
-    el("div", { class: "stat-card" }, [el("div", { class: "value" }, String(data.last_30_days)), el("div", { class: "label" }, "Oxirgi 30 kun")]),
-    el("div", { class: "stat-card" }, [
-      el("div", { class: "label" }, "Holat bo'yicha"),
-      el("ul", {}, Object.entries(data.by_status).map(([k, v]) => el("li", {}, [el("span", {}, STATUS_LABELS[k] || k), el("span", {}, String(v))]))),
-    ]),
-    el("div", { class: "stat-card" }, [
-      el("div", { class: "label" }, "Yo'nalish bo'yicha"),
-      el("ul", {}, Object.entries(data.by_category).map(([k, v]) => el("li", {}, [el("span", {}, k), el("span", {}, String(v))]))),
-    ])
+    statCard("indigo", ICONS.total, data.total, "Jami arizalar"),
+    statCard("info", ICONS.week, data.last_7_days, "Oxirgi 7 kun"),
+    statCard("success", ICONS.month, data.last_30_days, "Oxirgi 30 kun"),
+    statCard("warning", ICONS.category, Object.keys(data.by_category).length, "Faol yo'nalishlar")
   );
+
+  const charts = document.getElementById("stats-charts");
+  charts.innerHTML = "";
+  charts.append(
+    breakdownCard(
+      "Holat bo'yicha",
+      "Arizalarning joriy holati taqsimoti",
+      Object.entries(data.by_status).map(([k, v]) => ({ label: STATUS_LABELS[k] || k, value: v, color: (STATUS_TONE[k] || {}).hex || "#94A3B8" }))
+    ),
+    breakdownCard(
+      "Yo'nalish bo'yicha",
+      "Kategoriyalar kesimida arizalar soni",
+      Object.entries(data.by_category).map(([k, v], i) => ({ label: k, value: v, color: ["#4F46E5", "#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#6366F1"][i % 6] }))
+    )
+  );
+}
+
+function breakdownCard(title, subtitle, rows) {
+  const total = rows.reduce((sum, r) => sum + r.value, 0) || 1;
+  const list = el(
+    "ul",
+    { class: "breakdown-list" },
+    rows.map((r) =>
+      el("li", {}, [
+        el("span", { class: "dot", style: `background:${r.color}` }),
+        el("span", { class: "b-label" }, r.label),
+        el("span", { class: "b-bar-track" }, [el("span", { class: "b-bar-fill", style: `width:${Math.round((r.value / total) * 100)}%;background:${r.color}` })]),
+        el("span", { class: "b-value" }, String(r.value)),
+      ])
+    )
+  );
+  return el("div", { class: "card breakdown-card" }, [
+    el("div", { class: "card-title" }, title),
+    el("div", { class: "card-sub" }, subtitle),
+    rows.length ? list : el("div", { class: "card-sub" }, "Ma'lumot yo'q"),
+  ]);
 }
 
 // --- Positions ---
@@ -277,7 +362,7 @@ async function loadPositions() {
       el("tr", {}, [
         el("td", {}, p.name_uz),
         el("td", {}, p.name_ru || "-"),
-        el("td", {}, el("span", { class: `status-pill ${p.is_active ? "status-invited" : "status-rejected"}` }, p.is_active ? "Faol" : "Nofaol")),
+        el("td", {}, el("span", { class: `status-pill ${p.is_active ? "status-invited" : "status-neutral"}` }, [el("span", { class: "dot" }), p.is_active ? "Faol" : "Nofaol"])),
         el("td", {}, state.role === "super_admin" ? el("button", { class: "btn-secondary", onclick: () => togglePosition(p) }, p.is_active ? "Nofaollashtirish" : "Faollashtirish") : ""),
       ])
     );
@@ -335,7 +420,7 @@ async function loadTexts() {
   for (const text of texts) {
     const uzArea = el("textarea", {}, text.text_uz);
     const ruArea = el("textarea", {}, text.text_ru);
-    const card = el("div", { class: "stat-card", style: "margin-bottom:16px" });
+    const card = el("div", { class: "card", style: "padding:20px;margin-bottom:16px" });
     card.append(
       el("div", { class: "field" }, [el("b", {}, `Kalit: ${text.key}`)]),
       el("div", { class: "field" }, [el("b", {}, "O'zbekcha"), uzArea]),

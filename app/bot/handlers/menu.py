@@ -7,8 +7,7 @@ from aiogram.types import CallbackQuery, Message
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.bot.keyboards import back_to_menu_keyboard, main_menu_keyboard
-from app.bot.render import send_or_edit
+from app.bot.keyboards import main_menu_keyboard
 from app.bot.texts import t
 from app.db.models import BotText, User
 
@@ -23,20 +22,20 @@ async def get_bot_text(session: AsyncSession, key: str, lang: str, fallback_key:
 
 
 async def show_main_menu(event: Message | CallbackQuery, lang: str) -> None:
-    await send_or_edit(event, t(lang, "main_menu_title"), main_menu_keyboard(lang))
+    text = t(lang, "main_menu_title")
+    kb = main_menu_keyboard(lang)
+    if isinstance(event, CallbackQuery):
+        await event.message.answer(text, reply_markup=kb)
+        await event.answer()
+    else:
+        await event.answer(text, reply_markup=kb)
 
 
-@router.callback_query(F.data == "menu:root")
-async def cb_menu_root(callback: CallbackQuery, state: FSMContext, db_user: User) -> None:
-    await state.clear()
-    await show_main_menu(callback, db_user.language)
-
-
-@router.callback_query(F.data == "menu:about")
-async def cb_menu_about(callback: CallbackQuery, session: AsyncSession, db_user: User) -> None:
+@router.message(F.text.in_({t(lang, "menu_about") for lang in ("uz", "ru")}))
+async def msg_menu_about(message: Message, session: AsyncSession, db_user: User) -> None:
     lang = db_user.language
     text = await get_bot_text(session, "about_us", lang)
-    await send_or_edit(callback, text, back_to_menu_keyboard(lang))
+    await message.answer(text, reply_markup=main_menu_keyboard(lang))
 
 
 @router.message(Command("menu"))

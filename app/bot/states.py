@@ -16,6 +16,8 @@ class AdminStates(StatesGroup):
     browsing_applications = State()
     entering_status_comment = State()
     managing_positions = State()
+    choosing_position_category = State()
+    choosing_text_key = State()
     adding_position_name_uz = State()
     adding_position_name_ru = State()
     editing_text_uz = State()
