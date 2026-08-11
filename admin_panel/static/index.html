@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LAZANA HR — Admin Panel</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div id="login-screen" class="login-screen">
+  <form id="login-form" class="login-card">
+    <h1>LAZANA HR</h1>
+    <p class="muted">Admin panelga kirish</p>
+    <label>Login</label>
+    <input type="text" id="login-username" autocomplete="username" required />
+    <label>Parol</label>
+    <input type="password" id="login-password" autocomplete="current-password" required />
+    <button type="submit">Kirish</button>
+    <div id="login-error" class="error"></div>
+  </form>
+</div>
+
+<div id="dashboard" class="dashboard hidden">
+  <header class="topbar">
+    <div class="brand">LAZANA HR — Admin Panel</div>
+    <div class="topbar-right">
+      <span id="admin-role-badge" class="badge"></span>
+      <button id="logout-btn" class="btn-secondary">Chiqish</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="sidebar">
+      <button class="nav-item active" data-tab="applications">📋 Arizalar</button>
+      <button class="nav-item" data-tab="stats">📊 Statistika</button>
+      <button class="nav-item" data-tab="positions">🏷 Lavozimlar</button>
+      <button class="nav-item" data-tab="texts">📝 Matnlar</button>
+    </nav>
+
+    <main class="content">
+      <section id="tab-applications" class="tab-panel">
+        <div class="toolbar">
+          <select id="filter-status">
+            <option value="">Barcha holatlar</option>
+            <option value="submitted">Yuborilgan</option>
+            <option value="reviewed">Ko'rib chiqilgan</option>
+            <option value="invited">Taklif qilingan</option>
+            <option value="rejected">Rad etilgan</option>
+          </select>
+          <select id="filter-category">
+            <option value="">Barcha yo'nalishlar</option>
+          </select>
+          <input type="text" id="filter-search" placeholder="F.I.Sh. yoki telefon bo'yicha qidirish" />
+          <button id="filter-apply-btn">Filtrlash</button>
+          <button id="export-btn" class="btn-secondary">📤 CSV eksport</button>
+        </div>
+        <div id="applications-table-wrap" class="table-wrap"></div>
+        <div id="applications-pagination" class="pagination"></div>
+      </section>
+
+      <section id="tab-stats" class="tab-panel hidden">
+        <div id="stats-content" class="stats-grid"></div>
+      </section>
+
+      <section id="tab-positions" class="tab-panel hidden">
+        <div class="toolbar">
+          <select id="positions-category-filter">
+            <option value="">Barcha yo'nalishlar</option>
+          </select>
+          <button id="position-add-btn">➕ Yangi lavozim</button>
+        </div>
+        <div id="positions-table-wrap" class="table-wrap"></div>
+      </section>
+
+      <section id="tab-texts" class="tab-panel hidden">
+        <div id="texts-list"></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<div id="modal-root"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+from aiogram.fsm.state import State, StatesGroup
+
+
+class LanguageStates(StatesGroup):
+    choosing = State()
+
+
+class ApplicationStates(StatesGroup):
+    choosing_category = State()
+    choosing_position = State()
+    filling_step = State()  # generic — qaysi savol ekanligi FSMContext.data["step_key"] da saqlanadi
+    confirming = State()
+
+
+class AdminStates(StatesGroup):
+    browsing_applications = State()
+    entering_status_comment = State()
+    managing_positions = State()
+    adding_position_name_uz = State()
+    adding_position_name_ru = State()
+    editing_text_uz = State()
+    editing_text_ru = State()
+    adding_admin_id = State()
