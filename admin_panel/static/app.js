@@ -478,10 +478,6 @@ async function changeStatus(id, newStatus) {
 }
 
 async function deleteApplication(app) {
-  const confirmed = confirm(
-    `#${app.id} — ${app.full_name || "nomzod"} arizasini butunlay o'chirmoqchimisiz?\nBu amalni ortga qaytarib bo'lmaydi. O'chirilgach, nomzod kutish muddatisiz qayta ariza topshira oladi.`
-  );
-  if (!confirmed) return;
   try {
     await api(`/api/applications/${app.id}`, { method: "DELETE" });
     showToast("Ariza o'chirildi.", "success");
