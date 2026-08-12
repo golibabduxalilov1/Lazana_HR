@@ -12,6 +12,7 @@ export default function Login() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -32,37 +33,124 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      <form className="login-card" onSubmit={handleSubmit}>
+      <div className="login-page-glow" aria-hidden="true" />
+      <form className="login-card" onSubmit={handleSubmit} noValidate>
+        <div className="login-logo" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12 2 3 6v6c0 5 3.8 8.7 9 10 5.2-1.3 9-5 9-10V6l-9-4Z"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinejoin="round"
+            />
+            <path
+              d="m8.5 12 2.4 2.4L15.5 9.6"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+
         <h1 className="login-title">{t("login_title")}</h1>
-        <div className="login-subtitle">LAZANA HR</div>
+        <div className="login-subtitle">LAZANA HR — Admin Panel</div>
 
-        <label className="form-label" htmlFor="username">
-          {t("username")}
-        </label>
-        <input
-          id="username"
-          className="form-input"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          autoFocus
-          required
-        />
+        <div className="form-group">
+          <label className="form-label" htmlFor="username">
+            {t("username")}
+          </label>
+          <div className="input-group">
+            <span className="input-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="8" r="3.6" stroke="currentColor" strokeWidth="1.6" />
+                <path
+                  d="M4.5 20c1.4-3.8 4.4-5.8 7.5-5.8s6.1 2 7.5 5.8"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
+            <input
+              id="username"
+              className="form-input input-with-icon"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoComplete="username"
+              autoFocus
+              required
+              placeholder={t("username")}
+            />
+          </div>
+        </div>
 
-        <label className="form-label" htmlFor="password">
-          {t("password")}
-        </label>
-        <input
-          id="password"
-          type="password"
-          className="form-input"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+        <div className="form-group">
+          <label className="form-label" htmlFor="password">
+            {t("password")}
+          </label>
+          <div className="input-group">
+            <span className="input-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <rect x="5" y="10.5" width="14" height="9" rx="2" stroke="currentColor" strokeWidth="1.6" />
+                <path d="M8 10.5V7.5a4 4 0 1 1 8 0v3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+            </span>
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              className="form-input input-with-icon input-with-action"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+              placeholder={t("password")}
+            />
+            <button
+              type="button"
+              className="input-action"
+              onClick={() => setShowPassword((v) => !v)}
+              tabIndex={-1}
+              aria-label={showPassword ? t("password_hide") : t("password_show")}
+            >
+              {showPassword ? (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M3 3l18 18M9.9 5.5A10.4 10.4 0 0 1 12 5.3c5.2 0 8.7 3.7 10.2 6.7-.6 1.2-1.6 2.6-3 3.9M6.6 6.9C4.4 8.4 2.8 10.4 1.8 12c1.5 3 5 6.7 10.2 6.7 1.6 0 3-.3 4.2-.9M9.9 12a2.6 2.6 0 0 0 3.6 2.4"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              ) : (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M1.8 12c1.5-3 5-6.7 10.2-6.7S20.7 9 22.2 12c-1.5 3-5 6.7-10.2 6.7S3.3 15 1.8 12Z"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinejoin="round"
+                  />
+                  <circle cx="12" cy="12" r="2.8" stroke="currentColor" strokeWidth="1.6" />
+                </svg>
+              )}
+            </button>
+          </div>
+        </div>
 
-        {error && <div className="form-error">{error}</div>}
+        {error && (
+          <div className="form-error form-error-box" role="alert">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
+              <path d="M12 8v5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              <circle cx="12" cy="16" r="0.9" fill="currentColor" />
+            </svg>
+            <span>{error}</span>
+          </div>
+        )}
 
         <button className="btn btn-primary login-submit" type="submit" disabled={loading}>
+          {loading && <span className="btn-spinner" aria-hidden="true" />}
           {loading ? t("loading") : t("login_button")}
         </button>
       </form>

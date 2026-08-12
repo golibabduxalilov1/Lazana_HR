@@ -5,6 +5,7 @@ import { useI18n } from "../context/I18nContext";
 import { useToast } from "../context/ToastContext";
 import { apiErrorMessage } from "../services/client";
 import { Loading } from "../components/Loading";
+import { ActiveBadge } from "../components/ActiveBadge";
 
 const ALL_ROLES = ["super_admin", "admin", "hr"];
 const EMPTY_FORM = { full_name: "", phone: "", telegram_id: "", role: "hr" };
@@ -147,7 +148,9 @@ export default function Admins() {
                   ))}
                 </select>
               </td>
-              <td>{emp.is_active ? t("active") : t("inactive")}</td>
+              <td>
+                <ActiveBadge active={emp.is_active} />
+              </td>
               <td className="row-actions">
                 <button className="btn btn-secondary" onClick={() => toggleActive(emp)}>
                   {emp.is_active ? t("inactive") : t("active")}

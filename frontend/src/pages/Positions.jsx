@@ -6,6 +6,7 @@ import { useToast } from "../context/ToastContext";
 import { apiErrorMessage } from "../services/client";
 import { Loading } from "../components/Loading";
 import { RoleGate } from "../components/RoleGate";
+import { ActiveBadge } from "../components/ActiveBadge";
 
 const EMPTY_FORM = { category_id: "", name_uz: "", name_ru: "", sort_order: 0 };
 
@@ -203,7 +204,9 @@ export default function Positions() {
                       <td>{p.name_uz}</td>
                       <td>{p.name_ru || "—"}</td>
                       <td>{p.sort_order}</td>
-                      <td>{p.is_active ? t("active") : t("inactive")}</td>
+                      <td>
+                        <ActiveBadge active={p.is_active} />
+                      </td>
                       <RoleGate roles={["super_admin", "admin"]}>
                         <td className="row-actions">
                           <button className="btn btn-secondary" onClick={() => startEdit(p)}>

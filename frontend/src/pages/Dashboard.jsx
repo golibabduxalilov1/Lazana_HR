@@ -6,12 +6,13 @@ import { apiErrorMessage } from "../services/client";
 import { Loading } from "../components/Loading";
 import { BarChart } from "../components/BarChart";
 import { PieChart } from "../components/PieChart";
+import { IconInbox, IconTrendingUp, IconCalendar } from "../components/icons";
 
 const STATUS_COLOR = {
-  submitted: "#2563eb",
-  reviewed: "#f59e0b",
-  invited: "#16a34a",
-  rejected: "#dc2626",
+  submitted: "#3B82F6",
+  reviewed: "#F59E0B",
+  invited: "#10B981",
+  rejected: "#EF4444",
 };
 
 export default function Dashboard() {
@@ -53,16 +54,31 @@ export default function Dashboard() {
 
       <div className="stat-cards">
         <div className="stat-card">
-          <div className="stat-value">{summary.total}</div>
-          <div className="stat-label">{t("dashboard_total")}</div>
+          <div className="stat-card-icon bg-primary-50 text-primary-700">
+            <IconInbox />
+          </div>
+          <div>
+            <div className="stat-value">{summary.total}</div>
+            <div className="stat-label">{t("dashboard_total")}</div>
+          </div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{summary.last_7_days}</div>
-          <div className="stat-label">{t("dashboard_last7")}</div>
+          <div className="stat-card-icon bg-status-infoBg text-status-infoText">
+            <IconTrendingUp />
+          </div>
+          <div>
+            <div className="stat-value">{summary.last_7_days}</div>
+            <div className="stat-label">{t("dashboard_last7")}</div>
+          </div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{summary.last_30_days}</div>
-          <div className="stat-label">{t("dashboard_last30")}</div>
+          <div className="stat-card-icon bg-status-workingBg text-status-workingText">
+            <IconCalendar />
+          </div>
+          <div>
+            <div className="stat-value">{summary.last_30_days}</div>
+            <div className="stat-label">{t("dashboard_last30")}</div>
+          </div>
         </div>
       </div>
 
