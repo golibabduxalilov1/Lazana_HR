@@ -12,7 +12,7 @@
   }
 
   body {
-    @apply bg-page text-ink-600 font-sans text-sm antialiased;
+    @apply bg-page text-ink-600 font-sans text-sm antialiased overflow-x-hidden;
   }
 
   h1,
@@ -44,7 +44,7 @@
   }
 
   .app-content {
-    @apply flex-1 p-6 animate-fade-in;
+    @apply flex-1 min-w-0 overflow-x-auto p-6 animate-fade-in;
   }
 
   /* Sidebar */
@@ -470,11 +470,11 @@
 
   /* Stat cards */
   .stat-cards {
-    @apply mb-5 flex gap-4;
+    @apply mb-5 flex flex-wrap gap-4;
   }
 
   .stat-card {
-    @apply flex flex-1 items-start gap-4 rounded-xl border border-border-subtle bg-white p-5 shadow-card;
+    @apply flex min-w-[220px] flex-1 items-start gap-4 rounded-xl border border-border-subtle bg-white p-5 shadow-card;
   }
 
   .stat-card-icon {
@@ -490,7 +490,7 @@
   }
 
   .chart-grid {
-    @apply grid grid-cols-2 gap-4;
+    @apply grid grid-cols-1 gap-4 lg:grid-cols-2;
   }
 
   /* Bar chart */
