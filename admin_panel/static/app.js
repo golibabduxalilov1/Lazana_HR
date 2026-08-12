@@ -100,6 +100,7 @@ function openConfirm({ title = "Tasdiqlash", message, confirmText = "Ha", cancel
     };
     const backdrop = el("div", { class: "modal-backdrop", onclick: (e) => { if (e.target === backdrop) finish(false); } });
     const body = el("div", { class: "modal modal-confirm" }, [
+      el("button", { class: "modal-x", title: "Yopish", onclick: () => finish(false) }, "✕"),
       el("h2", {}, title),
       el("p", { class: "modal-message" }, message),
       el("div", { class: "actions" }, [
@@ -256,19 +257,34 @@ async function loadApplications(page) {
   const data = await api(`/api/applications?${params.toString()}`);
 
   const wrap = document.getElementById("applications-table-wrap");
+  const canManage = CAN_MANAGE_ROLES.includes(state.role);
   const table = el("table", {}, [
-    el("thead", {}, el("tr", {}, ["#", "F.I.Sh.", "Telefon", "Yo'nalish/Lavozim", "Holat", "Sana"].map((h) => el("th", {}, h)))),
+    el("thead", {}, el("tr", {}, ["#", "F.I.Sh.", "Telefon", "Yo'nalish/Lavozim", "Holat", "Sana", ""].map((h) => el("th", {}, h)))),
   ]);
   const tbody = el("tbody");
   for (const item of data.items) {
-    const row = el("tr", { class: "clickable", onclick: () => openApplicationDetail(item.id) }, [
+    const cells = [
       el("td", {}, `#${item.id}`),
       el("td", {}, item.full_name || "-"),
       el("td", {}, item.phone || "-"),
       el("td", {}, `${item.category_name} / ${item.position_name}`),
       el("td", {}, statusPill(item.status)),
       el("td", {}, item.submitted_at ? new Date(item.submitted_at).toLocaleString("uz-UZ") : "-"),
-    ]);
+    ];
+    if (canManage) {
+      cells.push(
+        el("td", { class: "row-actions-cell" }, [
+          el("button", {
+            class: "row-delete-btn",
+            title: "O'chirish",
+            onclick: (e) => { e.stopPropagation(); deleteApplication(item); },
+          }, "🗑"),
+        ])
+      );
+    } else {
+      cells.push(el("td"));
+    }
+    const row = el("tr", { class: "clickable", onclick: () => openApplicationDetail(item.id) }, cells);
     tbody.append(row);
   }
   table.append(tbody);
@@ -465,7 +481,8 @@ async function deleteApplication(app) {
   const confirmed = await openConfirm({
     title: "Arizani o'chirish",
     message: `#${app.id} — ${app.full_name || "nomzod"} arizasini butunlay o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi. O'chirilgach, nomzod kutish muddatisiz qayta ariza topshira oladi.`,
-    confirmText: "O'chirish",
+    confirmText: "Tasdiqlayman",
+    cancelText: "Yo'q",
     danger: true,
   });
   if (!confirmed) return;
