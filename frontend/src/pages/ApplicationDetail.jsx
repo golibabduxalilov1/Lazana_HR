@@ -111,7 +111,7 @@ export default function ApplicationDetail() {
           <StatusBadge status={application.status} />
         </div>
 
-        <RoleGate roles={["super_admin", "admin"]}>
+        <RoleGate roles={["super_admin"]}>
           <button className="btn btn-danger !mr-0" onClick={handleDelete}>
             <span className="inline-flex items-center gap-1.5">
               <IconTrash /> {t("delete")}

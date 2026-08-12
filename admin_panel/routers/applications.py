@@ -152,7 +152,7 @@ async def get_application(
 async def delete_application(
     application_id: int,
     session: AsyncSession = Depends(get_session),
-    _admin: Admin = Depends(require_roles("super_admin", "admin")),
+    _admin: Admin = Depends(require_roles("super_admin")),
 ) -> None:
     application = await session.get(Application, application_id)
     if application is None:

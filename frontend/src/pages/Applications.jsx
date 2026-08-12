@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { listApplications, listCategories } from "../services/applications";
+import { deleteApplication, listApplications, listCategories } from "../services/applications";
 import { listPositions } from "../services/positions";
 import { exportApplicationsCsv } from "../services/export";
+import { useAuth } from "../context/AuthContext";
 import { useI18n } from "../context/I18nContext";
 import { useToast } from "../context/ToastContext";
 import { apiErrorMessage } from "../services/client";
 import { Loading } from "../components/Loading";
 import { StatusBadge } from "../components/StatusBadge";
 import { Pagination } from "../components/Pagination";
-import { IconDownload } from "../components/icons";
+import { RoleGate } from "../components/RoleGate";
+import { IconDownload, IconTrash } from "../components/icons";
 
 const STATUSES = ["submitted", "reviewed", "invited", "rejected"];
 
@@ -22,6 +24,7 @@ export default function Applications() {
   const { t } = useI18n();
   const toast = useToast();
   const navigate = useNavigate();
+  const { isSuperAdmin } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [categories, setCategories] = useState([]);
@@ -93,6 +96,18 @@ export default function Applications() {
       toast.error(apiErrorMessage(err));
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleDelete = async (e, item) => {
+    e.stopPropagation();
+    if (!window.confirm(t("detail_delete_confirm"))) return;
+    try {
+      await deleteApplication(item.id);
+      toast.success(t("delete"));
+      fetchData();
+    } catch (err) {
+      toast.error(apiErrorMessage(err));
     }
   };
 
@@ -202,6 +217,7 @@ export default function Applications() {
                 <th>{t("apps_phone")}</th>
                 <th>{t("apps_status")}</th>
                 <th>{t("apps_submitted_at")}</th>
+                {isSuperAdmin && <th />}
               </tr>
             </thead>
             <tbody>
@@ -220,6 +236,13 @@ export default function Applications() {
                     <StatusBadge status={item.status} />
                   </td>
                   <td>{formatDate(item.submitted_at)}</td>
+                  <RoleGate roles={["super_admin"]}>
+                    <td className="row-actions">
+                      <button className="btn btn-danger" onClick={(e) => handleDelete(e, item)}>
+                        <IconTrash />
+                      </button>
+                    </td>
+                  </RoleGate>
                 </tr>
               ))}
             </tbody>
