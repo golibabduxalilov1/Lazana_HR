@@ -193,7 +193,7 @@ export default function Positions() {
                         />
                       </td>
                       <td>{p.is_active ? t("active") : t("inactive")}</td>
-                      <td className="row-actions row-actions-inline">
+                      <td className="row-actions">
                         <button className="btn btn-primary" onClick={() => saveEdit(p.id)}>
                           {t("save")}
                         </button>

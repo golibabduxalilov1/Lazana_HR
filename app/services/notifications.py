@@ -6,7 +6,8 @@ from aiogram import Bot
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Admin, Application, Position, PositionCategory
+from app.bot.texts import t
+from app.db.models import Admin, Application, BotText, Position, PositionCategory, User
 
 logger = logging.getLogger(__name__)
 
@@ -45,3 +46,24 @@ async def notify_hr(
             logger.exception(
                 "Xodimga bildirishnoma yuborishda xatolik (application_id=%s, chat_id=%s)", application.id, chat_id
             )
+
+
+async def notify_candidate_rejected(bot: Bot, session: AsyncSession, application: Application) -> None:
+    user = await session.get(User, application.user_id)
+    if user is None:
+        return
+
+    row = await session.scalar(select(BotText).where(BotText.key == "rejection_message"))
+    if row is None:
+        text = t(user.language, "rejection_message_fallback")
+    else:
+        text = row.text_uz if user.language == "uz" else row.text_ru
+
+    try:
+        await bot.send_message(chat_id=user.telegram_id, text=text)
+    except Exception:
+        logger.exception(
+            "Nomzodga rad etish bildirishnomasini yuborishda xatolik (application_id=%s, user_id=%s)",
+            application.id,
+            user.id,
+        )

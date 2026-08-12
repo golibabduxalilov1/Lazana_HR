@@ -117,4 +117,14 @@ BOT_TEXTS = {
         "text_uz": "Sizni ishga kirish uchun topshirgan arizangiz qabul qilindi. Kompaniyamiz HR bo'limi siz bilan bog'lanadi.",
         "text_ru": "Ваша заявка на трудоустройство принята. Отдел кадров нашей компании свяжется с вами.",
     },
+    "rejection_message": {
+        "text_uz": (
+            "Hurmatli nomzod, arizangiz ko'rib chiqildi. Afsuski, hozircha sizga mos vakansiya topilmadi. "
+            "E'tiboringiz uchun rahmat!"
+        ),
+        "text_ru": (
+            "Уважаемый кандидат! Ваша заявка была рассмотрена. К сожалению, на данный момент подходящей "
+            "вакансии для вас не нашлось. Спасибо за уделённое внимание!"
+        ),
+    },
 }

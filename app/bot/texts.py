@@ -124,6 +124,10 @@ T: dict[str, dict[str, str]] = {
         "uz": "Arizangiz qabul qilindi. Rahmat!",
         "ru": "Ваша заявка принята. Спасибо!",
     },
+    "rejection_message_fallback": {
+        "uz": "Hurmatli nomzod, arizangiz ko'rib chiqildi. Afsuski, hozircha sizga mos vakansiya topilmadi.",
+        "ru": "Уважаемый кандидат! Ваша заявка была рассмотрена. К сожалению, подходящей вакансии не нашлось.",
+    },
     "nothing_to_go_back": {
         "uz": "Bu birinchi qadam, orqaga qaytish imkoni yo'q.",
         "ru": "Это первый шаг, вернуться назад невозможно.",

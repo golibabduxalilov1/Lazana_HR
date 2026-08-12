@@ -7,8 +7,10 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from admin_panel.routers import applications, auth, employees, export, positions, stats, texts
+from admin_panel.telegram import close_bot
 
 app = FastAPI(title="LAZANA HR — Admin Panel", version="1.0.0")
+app.add_event_handler("shutdown", close_bot)
 
 app.include_router(auth.router)
 app.include_router(applications.router)

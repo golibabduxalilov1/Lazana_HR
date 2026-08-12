@@ -381,11 +381,7 @@
   }
 
   .row-actions {
-    @apply flex flex-col items-center gap-1.5 whitespace-nowrap;
-  }
-
-  .row-actions-inline {
-    @apply flex-row justify-center;
+    @apply flex flex-row items-center justify-center gap-1.5 whitespace-nowrap;
   }
 
   .empty-state {

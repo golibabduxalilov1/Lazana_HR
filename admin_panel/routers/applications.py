@@ -15,7 +15,9 @@ from admin_panel.schemas import (
     StatusChangeRequest,
     StatusHistoryItem,
 )
+from admin_panel.telegram import get_bot
 from app.db.models import Admin, Application, ApplicationStatusHistory, Position, PositionCategory
+from app.services.notifications import notify_candidate_rejected
 
 router = APIRouter(prefix="/api", tags=["applications"])
 
@@ -195,4 +197,6 @@ async def change_status(
         )
     )
     await session.commit()
+    if application.status == "rejected":
+        await notify_candidate_rejected(get_bot(), session, application)
     return {"ok": True, "status": application.status}

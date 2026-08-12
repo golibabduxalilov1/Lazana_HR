@@ -41,7 +41,7 @@ export default {
   active: "Faol",
   inactive: "Nofaol",
 
-  status_submitted: "Yuborilgan",
+  status_submitted: "Yangi",
   status_reviewed: "Ko'rib chiqilgan",
   status_invited: "Taklif qilingan",
   status_rejected: "Rad etilgan",

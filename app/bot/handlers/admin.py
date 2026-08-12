@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime as dt
 
-from aiogram import F, Router
+from aiogram import Bot, F, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
@@ -29,6 +29,7 @@ from app.db.models import (
     PositionCategory,
 )
 from app.services.export import applications_to_csv, export_filename
+from app.services.notifications import notify_candidate_rejected
 
 router = Router(name="admin")
 router.message.filter(IsAdmin())
@@ -38,7 +39,7 @@ PAGE_SIZE = 5
 NO_PERMISSION_TEXT = "Sizda bu amal uchun ruxsat yo'q."
 
 STATUS_LABELS = {
-    "submitted": "🆕 Yuborilgan",
+    "submitted": "🆕 Yangi",
     "reviewed": "👀 Ko'rib chiqilgan",
     "invited": "✅ Taklif qilingan",
     "rejected": "❌ Rad etilgan",
@@ -266,7 +267,7 @@ async def cb_set_status_start(callback: CallbackQuery, state: FSMContext, admin:
 
 
 async def apply_status_change(
-    session: AsyncSession, admin: Admin, app_id: int, new_status: str, comment: str | None
+    session: AsyncSession, admin: Admin, app_id: int, new_status: str, comment: str | None, bot: Bot
 ) -> Application:
     application = await session.get(Application, app_id)
     old_status = application.status
@@ -281,14 +282,18 @@ async def apply_status_change(
         )
     )
     await session.commit()
+    if new_status == "rejected":
+        await notify_candidate_rejected(bot, session, application)
     return application
 
 
 @router.callback_query(AdminStates.entering_status_comment, F.data == "adm:skipcomment")
-async def cb_skip_comment(callback: CallbackQuery, state: FSMContext, session: AsyncSession, admin: Admin) -> None:
+async def cb_skip_comment(
+    callback: CallbackQuery, state: FSMContext, session: AsyncSession, admin: Admin, bot: Bot
+) -> None:
     data = await state.get_data()
     application = await apply_status_change(
-        session, admin, data["pending_app_id"], data["pending_new_status"], comment=None
+        session, admin, data["pending_app_id"], data["pending_new_status"], comment=None, bot=bot
     )
     await state.clear()
     await callback.message.answer(f"✅ Ariza #{application.id} holati «{STATUS_LABELS[application.status]}»ga o'zgartirildi.")
@@ -296,10 +301,12 @@ async def cb_skip_comment(callback: CallbackQuery, state: FSMContext, session: A
 
 
 @router.message(AdminStates.entering_status_comment, F.text)
-async def msg_status_comment(message: Message, state: FSMContext, session: AsyncSession, admin: Admin) -> None:
+async def msg_status_comment(
+    message: Message, state: FSMContext, session: AsyncSession, admin: Admin, bot: Bot
+) -> None:
     data = await state.get_data()
     application = await apply_status_change(
-        session, admin, data["pending_app_id"], data["pending_new_status"], comment=message.text.strip()[:500]
+        session, admin, data["pending_app_id"], data["pending_new_status"], comment=message.text.strip()[:500], bot=bot
     )
     await state.clear()
     await message.answer(f"✅ Ariza #{application.id} holati «{STATUS_LABELS[application.status]}»ga o'zgartirildi.")
@@ -561,6 +568,7 @@ TEXT_LABELS = {
     "welcome_message": "Salomlashish xabari (/start)",
     "about_us": "Biz haqimizda",
     "thanks_message": "Rahmat xabari",
+    "rejection_message": "Rad etish xabari",
 }
 
 

@@ -1,5 +1,5 @@
 const STATUS_LABELS = {
-  submitted: "Yuborilgan",
+  submitted: "Yangi",
   reviewed: "Ko'rib chiqilgan",
   invited: "Taklif qilingan",
   rejected: "Rad etilgan",
@@ -219,6 +219,8 @@ async function enterDashboard() {
 
   await loadCategories();
   await loadStats();
+  if (state.notificationPollId) clearInterval(state.notificationPollId);
+  state.notificationPollId = setInterval(refreshNotificationCount, 30000);
 }
 
 async function loadCategories() {
@@ -472,6 +474,7 @@ async function changeStatus(id, newStatus) {
     });
     showToast(`Holat «${STATUS_LABELS[newStatus]}»ga o'zgartirildi.`, "success");
     openApplicationDetail(id);
+    refreshNotificationCount();
   } catch (err) {
     showToast(err.message, "error");
   }
@@ -482,6 +485,7 @@ async function deleteApplication(app) {
     await api(`/api/applications/${app.id}`, { method: "DELETE" });
     showToast("Ariza o'chirildi.", "success");
     activateTab("applications");
+    refreshNotificationCount();
   } catch (err) {
     showToast(err.message || "O'chirishda xatolik yuz berdi.", "error");
   }
@@ -503,13 +507,30 @@ function statCard(tone, icon, value, label) {
   ]);
 }
 
+function updateNotificationBadges(count) {
+  const navBadge = document.getElementById("applications-nav-badge");
+  navBadge.textContent = String(count);
+  navBadge.classList.toggle("hidden", count === 0);
+
+  const bellBadge = document.getElementById("bell-badge");
+  bellBadge.textContent = String(count);
+  bellBadge.classList.toggle("hidden", count === 0);
+}
+
+async function refreshNotificationCount() {
+  if (!state.token) return;
+  try {
+    const data = await api("/api/stats/summary");
+    updateNotificationBadges(data.by_status.submitted || 0);
+  } catch (err) {
+    // silent: badge refresh should never surface errors to the user
+  }
+}
+
 async function loadStats() {
   const data = await api("/api/stats/summary");
 
-  const badge = document.getElementById("applications-nav-badge");
-  const submittedCount = data.by_status.submitted || 0;
-  badge.textContent = String(submittedCount);
-  badge.classList.toggle("hidden", submittedCount === 0);
+  updateNotificationBadges(data.by_status.submitted || 0);
 
   const container = document.getElementById("stats-content");
   container.innerHTML = "";
