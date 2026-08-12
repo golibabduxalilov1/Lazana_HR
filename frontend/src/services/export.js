@@ -1,6 +1,6 @@
 import { client } from "./client";
 
-export async function exportApplicationsCsv(filters) {
+export async function exportApplicationsExcel(filters) {
   const params = {};
   if (filters.dateFrom) params.date_from = filters.dateFrom;
   if (filters.dateTo) params.date_to = filters.dateTo;
@@ -9,14 +9,14 @@ export async function exportApplicationsCsv(filters) {
   if (filters.positionId) params.position_id = filters.positionId;
   if (filters.search) params.search = filters.search;
 
-  const response = await client.get("/api/export/applications.csv", {
+  const response = await client.get("/api/export/applications.xlsx", {
     params,
     responseType: "blob",
   });
 
   const disposition = response.headers["content-disposition"] || "";
   const match = disposition.match(/filename="?([^"]+)"?/);
-  const filename = match ? match[1] : "applications.csv";
+  const filename = match ? match[1] : "applications.xlsx";
 
   const url = window.URL.createObjectURL(response.data);
   const link = document.createElement("a");

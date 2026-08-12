@@ -136,6 +136,15 @@ export function IconEdit(props) {
   );
 }
 
+export function IconPower(props) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" {...common} {...props}>
+      <path d="M12 3.5v8" />
+      <path d="M7.5 6.2a7.5 7.5 0 1 0 9 0" />
+    </svg>
+  );
+}
+
 export function IconX(props) {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" {...common} {...props}>

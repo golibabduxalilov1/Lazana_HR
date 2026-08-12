@@ -2,10 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { deleteApplication, listApplications, listCategories } from "../services/applications";
 import { listPositions } from "../services/positions";
-import { exportApplicationsCsv } from "../services/export";
+import { exportApplicationsExcel } from "../services/export";
 import { useAuth } from "../context/AuthContext";
 import { useI18n } from "../context/I18nContext";
 import { useToast } from "../context/ToastContext";
+import { useConfirm } from "../context/ConfirmContext";
 import { apiErrorMessage } from "../services/client";
 import { Loading } from "../components/Loading";
 import { StatusBadge } from "../components/StatusBadge";
@@ -23,6 +24,7 @@ function formatDate(value) {
 export default function Applications() {
   const { t } = useI18n();
   const toast = useToast();
+  const confirm = useConfirm();
   const navigate = useNavigate();
   const { isSuperAdmin } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -91,7 +93,7 @@ export default function Applications() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      await exportApplicationsCsv(filters);
+      await exportApplicationsExcel(filters);
     } catch (err) {
       toast.error(apiErrorMessage(err));
     } finally {
@@ -101,7 +103,7 @@ export default function Applications() {
 
   const handleDelete = async (e, item) => {
     e.stopPropagation();
-    if (!window.confirm(t("detail_delete_confirm"))) return;
+    if (!(await confirm(t("detail_delete_confirm")))) return;
     try {
       await deleteApplication(item.id);
       toast.success(t("delete"));

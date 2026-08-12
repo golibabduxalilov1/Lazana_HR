@@ -6,6 +6,7 @@ import { apiErrorMessage } from "../services/client";
 import { Loading } from "../components/Loading";
 import { BarChart } from "../components/BarChart";
 import { PieChart } from "../components/PieChart";
+import { LineChart } from "../components/LineChart";
 import { IconInbox, IconTrendingUp, IconCalendar } from "../components/icons";
 
 const STATUS_COLOR = {
@@ -47,6 +48,11 @@ export default function Dashboard() {
     key: label,
   }));
   const categoryData = Object.entries(summary.by_category).map(([label, value]) => ({ label, value }));
+  const trendData = Object.entries(summary.daily_trend || {}).map(([date, value]) => {
+    const d = new Date(date);
+    const label = `${String(d.getUTCDate()).padStart(2, "0")}.${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    return { label, value };
+  });
 
   return (
     <div>
@@ -96,6 +102,10 @@ export default function Dashboard() {
         <div className="panel">
           <h2 className="panel-title">{t("dashboard_by_category")}</h2>
           <PieChart data={categoryData} />
+        </div>
+        <div className="panel col-span-2">
+          <h2 className="panel-title">{t("dashboard_trend")}</h2>
+          <LineChart data={trendData} />
         </div>
       </div>
     </div>

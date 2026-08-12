@@ -3,10 +3,11 @@ import { createEmployee, deleteEmployee, listEmployees, updateEmployee } from ".
 import { useAuth } from "../context/AuthContext";
 import { useI18n } from "../context/I18nContext";
 import { useToast } from "../context/ToastContext";
+import { useConfirm } from "../context/ConfirmContext";
 import { apiErrorMessage } from "../services/client";
 import { Loading } from "../components/Loading";
 import { ActiveBadge } from "../components/ActiveBadge";
-import { IconEdit, IconX } from "../components/icons";
+import { IconEdit, IconPower, IconTrash, IconX } from "../components/icons";
 
 const ALL_ROLES = ["super_admin", "admin", "hr"];
 const EMPTY_FORM = { full_name: "", phone: "", telegram_id: "", role: "hr" };
@@ -14,6 +15,7 @@ const EMPTY_FORM = { full_name: "", phone: "", telegram_id: "", role: "hr" };
 export default function Admins() {
   const { t } = useI18n();
   const toast = useToast();
+  const confirm = useConfirm();
   const { role: myRole } = useAuth();
 
   const [employees, setEmployees] = useState([]);
@@ -89,7 +91,7 @@ export default function Admins() {
   };
 
   const remove = async (emp) => {
-    if (!window.confirm(`${t("delete")}: ${emp.full_name || emp.telegram_id}?`)) return;
+    if (!(await confirm(`${t("delete")}: ${emp.full_name || emp.telegram_id}?`))) return;
     try {
       await deleteEmployee(emp.id);
       load();
@@ -138,14 +140,19 @@ export default function Admins() {
                 <ActiveBadge active={emp.is_active} />
               </td>
               <td className="row-actions">
-                <button className="btn btn-secondary" onClick={() => openEditModal(emp)}>
-                  <IconEdit /> {t("edit")}
+                <button className="btn btn-secondary btn-icon" title={t("edit")} aria-label={t("edit")} onClick={() => openEditModal(emp)}>
+                  <IconEdit />
                 </button>
-                <button className="btn btn-secondary" onClick={() => toggleActive(emp)}>
-                  {emp.is_active ? t("inactive") : t("active")}
+                <button
+                  className="btn btn-secondary btn-icon"
+                  title={emp.is_active ? t("inactive") : t("active")}
+                  aria-label={emp.is_active ? t("inactive") : t("active")}
+                  onClick={() => toggleActive(emp)}
+                >
+                  <IconPower />
                 </button>
-                <button className="btn btn-danger" onClick={() => remove(emp)}>
-                  {t("delete")}
+                <button className="btn btn-danger btn-icon" title={t("delete")} aria-label={t("delete")} onClick={() => remove(emp)}>
+                  <IconTrash />
                 </button>
               </td>
             </tr>

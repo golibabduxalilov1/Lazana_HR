@@ -3,16 +3,19 @@ import { listCategories } from "../services/applications";
 import { createPosition, deletePosition, listPositions, updatePosition } from "../services/positions";
 import { useI18n } from "../context/I18nContext";
 import { useToast } from "../context/ToastContext";
+import { useConfirm } from "../context/ConfirmContext";
 import { apiErrorMessage } from "../services/client";
 import { Loading } from "../components/Loading";
 import { RoleGate } from "../components/RoleGate";
 import { ActiveBadge } from "../components/ActiveBadge";
+import { IconEdit, IconPower, IconTrash } from "../components/icons";
 
 const EMPTY_FORM = { category_id: "", name_uz: "", name_ru: "", sort_order: 0 };
 
 export default function Positions() {
   const { t } = useI18n();
   const toast = useToast();
+  const confirm = useConfirm();
 
   const [categories, setCategories] = useState([]);
   const [positions, setPositions] = useState([]);
@@ -66,7 +69,7 @@ export default function Positions() {
   };
 
   const remove = async (p) => {
-    if (!window.confirm(`${t("delete")}: ${p.name_uz}?`)) return;
+    if (!(await confirm(`${t("delete")}: ${p.name_uz}?`))) return;
     try {
       await deletePosition(p.id);
       load();
@@ -209,14 +212,19 @@ export default function Positions() {
                       </td>
                       <RoleGate roles={["super_admin", "admin"]}>
                         <td className="row-actions">
-                          <button className="btn btn-secondary" onClick={() => startEdit(p)}>
-                            {t("edit")}
+                          <button className="btn btn-secondary btn-icon" title={t("edit")} aria-label={t("edit")} onClick={() => startEdit(p)}>
+                            <IconEdit />
                           </button>
-                          <button className="btn btn-secondary" onClick={() => toggleActive(p)}>
-                            {p.is_active ? t("inactive") : t("active")}
+                          <button
+                            className="btn btn-secondary btn-icon"
+                            title={p.is_active ? t("inactive") : t("active")}
+                            aria-label={p.is_active ? t("inactive") : t("active")}
+                            onClick={() => toggleActive(p)}
+                          >
+                            <IconPower />
                           </button>
-                          <button className="btn btn-danger" onClick={() => remove(p)}>
-                            {t("delete")}
+                          <button className="btn btn-danger btn-icon" title={t("delete")} aria-label={t("delete")} onClick={() => remove(p)}>
+                            <IconTrash />
                           </button>
                         </td>
                       </RoleGate>

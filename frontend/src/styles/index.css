@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -169,6 +169,10 @@
 
   .btn-danger {
     @apply border-status-repair bg-white text-status-repair hover:bg-status-repair hover:text-white;
+  }
+
+  .btn-icon {
+    @apply mb-0 mr-1.5 flex h-8 w-8 items-center justify-center p-0 last:mr-0;
   }
 
   /* Forms */
@@ -501,8 +505,12 @@
     @apply w-28 text-sm text-ink-600;
   }
 
+  .bar-track-wrap {
+    @apply relative flex-1;
+  }
+
   .bar-track {
-    @apply h-3.5 flex-1 overflow-hidden rounded bg-page;
+    @apply h-3.5 w-full overflow-hidden rounded bg-page;
   }
 
   .bar-fill {
@@ -513,13 +521,30 @@
     @apply w-8 text-right text-sm font-semibold text-ink-900;
   }
 
+  /* Shared chart tooltip */
+  .chart-tooltip {
+    @apply pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[130%] whitespace-nowrap rounded-md bg-ink-900 px-2 py-1 text-xs font-medium text-white shadow-card;
+  }
+
   /* Pie chart */
   .pie-chart-wrap {
     @apply flex items-center gap-5;
   }
 
   .pie-chart {
-    @apply h-[140px] w-[140px] flex-shrink-0 rounded-full;
+    @apply relative h-[140px] w-[140px] flex-shrink-0 rounded-full;
+  }
+
+  .pie-chart-hole {
+    @apply absolute inset-[20%] flex flex-col items-center justify-center rounded-full bg-white text-center;
+  }
+
+  .pie-chart-hole-value {
+    @apply text-lg font-bold leading-tight text-ink-900;
+  }
+
+  .pie-chart-hole-label {
+    @apply text-[11px] leading-tight text-ink-400;
   }
 
   .pie-legend {
@@ -532,6 +557,23 @@
 
   .pie-swatch {
     @apply inline-block h-2.5 w-2.5 rounded-sm;
+  }
+
+  /* Line chart */
+  .line-chart-wrap {
+    @apply relative;
+  }
+
+  .line-chart-svg {
+    @apply h-[160px] w-full;
+  }
+
+  .line-chart-point {
+    @apply cursor-pointer transition-all duration-150;
+  }
+
+  .line-chart-axis {
+    @apply mt-1 flex justify-between text-xs text-ink-400;
   }
 
   /* Detail page */
@@ -666,6 +708,43 @@
   }
 
   .modal-footer .btn {
+    @apply mb-0;
+  }
+
+  /* Confirm modal */
+  .confirm-overlay {
+    @apply fixed inset-0 z-[1100] flex items-center justify-center bg-ink-900/50 p-4;
+  }
+
+  .confirm-modal {
+    @apply w-full max-w-sm animate-slide-up rounded-xl bg-white shadow-card;
+  }
+
+  .confirm-header {
+    @apply flex items-center justify-between border-b border-border-subtle px-5 py-4;
+  }
+
+  .confirm-title {
+    @apply text-base font-semibold text-ink-900;
+  }
+
+  .confirm-close {
+    @apply flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-lg border-none bg-transparent p-0 text-ink-400 transition-colors duration-150;
+  }
+
+  .confirm-close:hover {
+    @apply bg-page text-ink-900;
+  }
+
+  .confirm-body {
+    @apply px-5 py-4 text-sm text-ink-600;
+  }
+
+  .confirm-footer {
+    @apply flex justify-end gap-2 border-t border-border-subtle px-5 py-4;
+  }
+
+  .confirm-footer .btn {
     @apply mb-0;
   }
 

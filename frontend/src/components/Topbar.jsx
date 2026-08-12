@@ -8,7 +8,6 @@ const PAGE_LABEL_KEYS = {
   applications: "nav_applications",
   positions: "nav_positions",
   texts: "nav_texts",
-  export: "nav_export",
   admins: "nav_admins",
 };
 

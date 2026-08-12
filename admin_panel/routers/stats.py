@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
+from collections import Counter
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
@@ -46,4 +47,25 @@ async def stats_summary(
         select(func.count()).select_from(Application).where(Application.submitted_at >= now - dt.timedelta(days=30))
     ) or 0
 
-    return StatsSummary(total=total, by_status=by_status, by_category=by_category, last_7_days=last_7, last_30_days=last_30)
+    trend_start = now - dt.timedelta(days=29)
+    trend_rows = (
+        await session.execute(
+            select(Application.submitted_at)
+            .where(Application.status != "draft")
+            .where(Application.submitted_at >= trend_start)
+        )
+    ).scalars().all()
+    trend_counts = Counter(ts.date().isoformat() for ts in trend_rows if ts is not None)
+    daily_trend = {}
+    for i in range(30):
+        day = (trend_start + dt.timedelta(days=i)).date().isoformat()
+        daily_trend[day] = trend_counts.get(day, 0)
+
+    return StatsSummary(
+        total=total,
+        by_status=by_status,
+        by_category=by_category,
+        last_7_days=last_7,
+        last_30_days=last_30,
+        daily_trend=daily_trend,
+    )

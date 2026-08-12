@@ -1,6 +1,9 @@
+import { useI18n } from "../context/I18nContext";
+
 const PALETTE = ["#2563eb", "#f59e0b", "#16a34a", "#dc2626", "#8b5cf6", "#0891b2"];
 
 export function PieChart({ data }) {
+  const { t } = useI18n();
   const total = data.reduce((sum, d) => sum + d.value, 0) || 1;
   let cumulative = 0;
 
@@ -15,12 +18,17 @@ export function PieChart({ data }) {
 
   return (
     <div className="pie-chart-wrap">
-      <div className="pie-chart" style={{ background: `conic-gradient(${gradientStops})` }} />
+      <div className="pie-chart" style={{ background: `conic-gradient(${gradientStops})` }}>
+        <div className="pie-chart-hole">
+          <span className="pie-chart-hole-value">{total}</span>
+          <span className="pie-chart-hole-label">{t("dashboard_total_short")}</span>
+        </div>
+      </div>
       <ul className="pie-legend">
         {data.map((d, i) => (
           <li key={d.label}>
             <span className="pie-swatch" style={{ background: PALETTE[i % PALETTE.length] }} />
-            {d.label}: {d.value}
+            {d.label}: {d.value} ({Math.round((d.value / total) * 100)}%)
           </li>
         ))}
       </ul>

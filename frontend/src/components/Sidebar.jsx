@@ -6,7 +6,6 @@ import {
   IconInbox,
   IconBriefcase,
   IconFileText,
-  IconDownload,
   IconUsers,
   IconLogout,
 } from "./icons";
@@ -22,7 +21,6 @@ const NAV_GROUPS = [
       { to: "/applications", labelKey: "nav_applications", icon: IconInbox, roles: ["super_admin", "admin"] },
       { to: "/positions", labelKey: "nav_positions", icon: IconBriefcase, roles: ["super_admin", "admin"] },
       { to: "/texts", labelKey: "nav_texts", icon: IconFileText, roles: ["super_admin", "admin"] },
-      { to: "/export", labelKey: "nav_export", icon: IconDownload, roles: ["super_admin", "admin"] },
     ],
   },
   {
@@ -53,7 +51,9 @@ export function Sidebar() {
 
   return (
     <aside className="sidebar">
-      <div className="sidebar-logo">LAZANA HR</div>
+      <div className="sidebar-logo">
+        <img src="/logo.svg" alt="LAZANA HR" className="h-8 w-auto" />
+      </div>
 
       <nav className="sidebar-nav">
         {NAV_GROUPS.map((group) => {

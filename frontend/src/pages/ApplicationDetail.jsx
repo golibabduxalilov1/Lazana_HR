@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { changeApplicationStatus, deleteApplication, getApplication } from "../services/applications";
 import { useI18n } from "../context/I18nContext";
 import { useToast } from "../context/ToastContext";
+import { useConfirm } from "../context/ConfirmContext";
 import { apiErrorMessage } from "../services/client";
 import { Loading } from "../components/Loading";
 import { StatusBadge } from "../components/StatusBadge";
@@ -47,6 +48,7 @@ export default function ApplicationDetail() {
   const { id } = useParams();
   const { t } = useI18n();
   const toast = useToast();
+  const confirm = useConfirm();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -83,7 +85,7 @@ export default function ApplicationDetail() {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm(t("detail_delete_confirm"))) return;
+    if (!(await confirm(t("detail_delete_confirm")))) return;
     try {
       await deleteApplication(id);
       navigate(`/applications${location.search}`);

@@ -11,6 +11,7 @@ export default function Texts() {
   const [texts, setTexts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [drafts, setDrafts] = useState({});
+  const [saved, setSaved] = useState({});
   const [savingKey, setSavingKey] = useState(null);
 
   const load = () => {
@@ -23,6 +24,7 @@ export default function Texts() {
           initial[row.key] = { text_uz: row.text_uz, text_ru: row.text_ru };
         });
         setDrafts(initial);
+        setSaved(initial);
       })
       .catch((err) => toast.error(apiErrorMessage(err)))
       .finally(() => setLoading(false));
@@ -30,10 +32,14 @@ export default function Texts() {
 
   useEffect(load, []);
 
+  const isDirty = (key) =>
+    drafts[key]?.text_uz !== saved[key]?.text_uz || drafts[key]?.text_ru !== saved[key]?.text_ru;
+
   const save = async (key) => {
     setSavingKey(key);
     try {
       await updateText(key, drafts[key]);
+      setSaved({ ...saved, [key]: drafts[key] });
       toast.success(t("save"));
     } catch (err) {
       toast.error(apiErrorMessage(err));
@@ -69,7 +75,11 @@ export default function Texts() {
               setDrafts({ ...drafts, [row.key]: { ...drafts[row.key], text_ru: e.target.value } })
             }
           />
-          <button className="btn btn-primary" disabled={savingKey === row.key} onClick={() => save(row.key)}>
+          <button
+            className="btn btn-primary"
+            disabled={savingKey === row.key || !isDirty(row.key)}
+            onClick={() => save(row.key)}
+          >
             {savingKey === row.key ? t("loading") : t("save")}
           </button>
         </div>

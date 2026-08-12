@@ -151,3 +151,4 @@ class StatsSummary(BaseModel):
     by_category: dict[str, int]
     last_7_days: int
     last_30_days: int
+    daily_trend: dict[str, int]
