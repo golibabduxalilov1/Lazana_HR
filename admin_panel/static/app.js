@@ -87,6 +87,59 @@ function showModal(contentNode) {
 }
 function closeModal() { document.getElementById("modal-root").innerHTML = ""; }
 
+function openConfirm({ title = "Tasdiqlash", message, confirmText = "Ha", cancelText = "Bekor qilish", danger = false }) {
+  return new Promise((resolve) => {
+    const root = document.getElementById("modal-root");
+    root.innerHTML = "";
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      root.innerHTML = "";
+      resolve(result);
+    };
+    const backdrop = el("div", { class: "modal-backdrop", onclick: (e) => { if (e.target === backdrop) finish(false); } });
+    const body = el("div", { class: "modal modal-confirm" }, [
+      el("h2", {}, title),
+      el("p", { class: "modal-message" }, message),
+      el("div", { class: "actions" }, [
+        el("button", { class: danger ? "btn-danger" : "btn-primary", onclick: () => finish(true) }, confirmText),
+        el("button", { class: "btn-close", onclick: () => finish(false) }, cancelText),
+      ]),
+    ]);
+    backdrop.append(body);
+    root.append(backdrop);
+  });
+}
+
+function openPrompt({ title, message, placeholder = "" }) {
+  return new Promise((resolve) => {
+    const root = document.getElementById("modal-root");
+    root.innerHTML = "";
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      root.innerHTML = "";
+      resolve(result);
+    };
+    const textarea = el("textarea", { placeholder, rows: 3 });
+    const backdrop = el("div", { class: "modal-backdrop", onclick: (e) => { if (e.target === backdrop) finish(null); } });
+    const fields = [el("h2", {}, title)];
+    if (message) fields.push(el("p", { class: "modal-message" }, message));
+    fields.push(
+      el("div", { class: "field" }, [textarea]),
+      el("div", { class: "actions" }, [
+        el("button", { class: "btn-primary", onclick: () => finish(textarea.value.trim() || "") }, "Davom etish"),
+        el("button", { class: "btn-close", onclick: () => finish(null) }, "Bekor qilish"),
+      ])
+    );
+    backdrop.append(el("div", { class: "modal modal-confirm" }, fields));
+    root.append(backdrop);
+    textarea.focus();
+  });
+}
+
 // --- Login ---
 document.getElementById("toggle-password").addEventListener("click", () => {
   const input = document.getElementById("login-password");
@@ -239,7 +292,7 @@ async function exportCsv() {
   const res = await fetch(`/api/export/applications.csv?${params.toString()}`, {
     headers: { Authorization: `Bearer ${state.token}` },
   });
-  if (!res.ok) { alert("Eksport qilishda xatolik yuz berdi."); return; }
+  if (!res.ok) { showToast("Eksport qilishda xatolik yuz berdi.", "error"); return; }
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
   const a = el("a", { href: url, download: "lazana_applications.csv" });
@@ -391,27 +444,37 @@ function renderApplicationDetail(app) {
 }
 
 async function changeStatus(id, newStatus) {
-  const comment = prompt(`«${STATUS_LABELS[newStatus]}» holatiga o'tkazish uchun izoh (ixtiyoriy):`, "") || null;
+  const comment = await openPrompt({
+    title: `«${STATUS_LABELS[newStatus]}» holatiga o'tkazish`,
+    message: "Izoh (ixtiyoriy):",
+  });
+  if (comment === null) return;
   try {
     await api(`/api/applications/${id}/status`, {
       method: "PATCH",
-      body: JSON.stringify({ new_status: newStatus, comment }),
+      body: JSON.stringify({ new_status: newStatus, comment: comment || null }),
     });
     showToast(`Holat «${STATUS_LABELS[newStatus]}»ga o'zgartirildi.`, "success");
     openApplicationDetail(id);
   } catch (err) {
-    alert(err.message);
+    showToast(err.message, "error");
   }
 }
 
 async function deleteApplication(app) {
-  if (!confirm(`#${app.id} — ${app.full_name || "nomzod"} arizasini butunlay o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.`)) return;
+  const confirmed = await openConfirm({
+    title: "Arizani o'chirish",
+    message: `#${app.id} — ${app.full_name || "nomzod"} arizasini butunlay o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi. O'chirilgach, nomzod kutish muddatisiz qayta ariza topshira oladi.`,
+    confirmText: "O'chirish",
+    danger: true,
+  });
+  if (!confirmed) return;
   try {
     await api(`/api/applications/${app.id}`, { method: "DELETE" });
     showToast("Ariza o'chirildi.", "success");
     activateTab("applications");
   } catch (err) {
-    alert(err.message || "O'chirishda xatolik yuz berdi.");
+    showToast(err.message || "O'chirishda xatolik yuz berdi.", "error");
   }
 }
 
@@ -525,12 +588,18 @@ async function togglePosition(position) {
 }
 
 async function deletePosition(position) {
-  if (!confirm(`"${position.name_uz}" lavozimini o'chirmoqchimisiz?`)) return;
+  const confirmed = await openConfirm({
+    title: "Lavozimni o'chirish",
+    message: `"${position.name_uz}" lavozimini o'chirmoqchimisiz?`,
+    confirmText: "O'chirish",
+    danger: true,
+  });
+  if (!confirmed) return;
   try {
     await api(`/api/positions/${position.id}`, { method: "DELETE" });
     loadPositions();
   } catch (err) {
-    alert(err.message);
+    showToast(err.message, "error");
   }
 }
 
@@ -904,12 +973,18 @@ function openEditEmployeeModal(emp) {
 }
 
 async function deactivateEmployee(emp) {
-  if (!confirm(`${emp.full_name || emp.telegram_id} xodimini nofaollashtirmoqchimisiz?`)) return;
+  const confirmed = await openConfirm({
+    title: "Xodimni nofaollashtirish",
+    message: `${emp.full_name || emp.telegram_id} xodimini nofaollashtirmoqchimisiz?`,
+    confirmText: "Nofaollashtirish",
+    danger: true,
+  });
+  if (!confirmed) return;
   try {
     await api(`/api/employees/${emp.id}`, { method: "DELETE" });
     loadEmployees();
   } catch (err) {
-    alert(err.message);
+    showToast(err.message, "error");
   }
 }
 
