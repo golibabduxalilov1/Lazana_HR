@@ -2,12 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { listApplications, listCategories } from "../services/applications";
 import { listPositions } from "../services/positions";
+import { exportApplicationsCsv } from "../services/export";
 import { useI18n } from "../context/I18nContext";
 import { useToast } from "../context/ToastContext";
 import { apiErrorMessage } from "../services/client";
 import { Loading } from "../components/Loading";
 import { StatusBadge } from "../components/StatusBadge";
 import { Pagination } from "../components/Pagination";
+import { IconDownload } from "../components/icons";
 
 const STATUSES = ["submitted", "reviewed", "invited", "rejected"];
 
@@ -26,6 +28,7 @@ export default function Applications() {
   const [positions, setPositions] = useState([]);
   const [result, setResult] = useState({ items: [], total: 0 });
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
 
   const filters = {
     status: searchParams.get("status") || "",
@@ -82,76 +85,105 @@ export default function Applications() {
     setSearchParams(next);
   };
 
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await exportApplicationsCsv(filters);
+    } catch (err) {
+      toast.error(apiErrorMessage(err));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div>
-      <h1 className="page-title">{t("nav_applications")}</h1>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="mb-1 text-2xl font-bold text-ink-900">{t("nav_applications")}</h1>
+          <div className="flex items-center gap-1.5 text-sm text-ink-400">
+            <span>{t("apps_total")}</span>
+            <span className="role-badge">{result.total}</span>
+            <span>{t("apps_total_suffix")}</span>
+          </div>
+        </div>
 
-      <form className="filter-bar" onSubmit={applyFilters}>
-        <select
-          className="form-input"
-          value={formState.status}
-          onChange={(e) => setFormState({ ...formState, status: e.target.value })}
-        >
-          <option value="">{t("apps_all")} — {t("apps_filter_status")}</option>
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {t(`status_${s}`)}
-            </option>
-          ))}
-        </select>
+        <button className="btn btn-secondary m-0 flex items-center gap-1.5" onClick={handleExport} disabled={exporting}>
+          <IconDownload width="16" height="16" />
+          {exporting ? t("loading") : t("apps_export_excel")}
+        </button>
+      </div>
 
-        <select
-          className="form-input"
-          value={formState.categoryId}
-          onChange={(e) => setFormState({ ...formState, categoryId: e.target.value })}
-        >
-          <option value="">{t("apps_all")} — {t("apps_filter_category")}</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name_uz}
-            </option>
-          ))}
-        </select>
-
-        <select
-          className="form-input"
-          value={formState.positionId}
-          onChange={(e) => setFormState({ ...formState, positionId: e.target.value })}
-        >
-          <option value="">{t("apps_all")} — {t("apps_filter_position")}</option>
-          {positions.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name_uz}
-            </option>
-          ))}
-        </select>
-
+      <form className="panel" onSubmit={applyFilters}>
         <input
-          className="form-input"
-          placeholder={t("apps_filter_search")}
+          className="form-input mb-3"
+          placeholder={t("apps_search_placeholder")}
           value={formState.search}
           onChange={(e) => setFormState({ ...formState, search: e.target.value })}
         />
 
-        <input
-          type="date"
-          className="form-input"
-          value={formState.dateFrom}
-          onChange={(e) => setFormState({ ...formState, dateFrom: e.target.value })}
-        />
-        <input
-          type="date"
-          className="form-input"
-          value={formState.dateTo}
-          onChange={(e) => setFormState({ ...formState, dateTo: e.target.value })}
-        />
+        <div className="filter-bar mb-0">
+          <select
+            className="form-input"
+            value={formState.status}
+            onChange={(e) => setFormState({ ...formState, status: e.target.value })}
+          >
+            <option value="">{t("apps_all")} — {t("apps_filter_status")}</option>
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {t(`status_${s}`)}
+              </option>
+            ))}
+          </select>
 
-        <button className="btn btn-primary" type="submit">
-          {t("apps_filter_apply")}
-        </button>
-        <button className="btn btn-secondary" type="button" onClick={resetFilters}>
-          {t("apps_filter_reset")}
-        </button>
+          <select
+            className="form-input"
+            value={formState.categoryId}
+            onChange={(e) => setFormState({ ...formState, categoryId: e.target.value })}
+          >
+            <option value="">{t("apps_all")} — {t("apps_filter_category")}</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name_uz}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="form-input"
+            value={formState.positionId}
+            onChange={(e) => setFormState({ ...formState, positionId: e.target.value })}
+          >
+            <option value="">{t("apps_all")} — {t("apps_filter_position")}</option>
+            {positions.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name_uz}
+              </option>
+            ))}
+          </select>
+
+          <input
+            type="date"
+            className="form-input"
+            title={t("apps_filter_date_from")}
+            value={formState.dateFrom}
+            onChange={(e) => setFormState({ ...formState, dateFrom: e.target.value })}
+          />
+          <input
+            type="date"
+            className="form-input"
+            title={t("apps_filter_date_to")}
+            value={formState.dateTo}
+            onChange={(e) => setFormState({ ...formState, dateTo: e.target.value })}
+          />
+
+          <button className="btn btn-primary" type="submit">
+            {t("apps_filter_apply")}
+          </button>
+          <button className="btn btn-secondary" type="button" onClick={resetFilters}>
+            {t("apps_filter_reset")}
+          </button>
+        </div>
       </form>
 
       {loading ? (

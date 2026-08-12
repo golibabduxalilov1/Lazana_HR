@@ -126,3 +126,20 @@ export function IconTrash(props) {
     </svg>
   );
 }
+
+export function IconEdit(props) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" {...common} {...props}>
+      <path d="M4 20h4l10.5-10.5a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5V20Z" />
+      <path d="M13.5 7 17 10.5" />
+    </svg>
+  );
+}
+
+export function IconX(props) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" {...common} {...props}>
+      <path d="M6 6l12 12M18 6 6 18" />
+    </svg>
+  );
+}

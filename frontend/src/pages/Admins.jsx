@@ -6,6 +6,7 @@ import { useToast } from "../context/ToastContext";
 import { apiErrorMessage } from "../services/client";
 import { Loading } from "../components/Loading";
 import { ActiveBadge } from "../components/ActiveBadge";
+import { IconEdit, IconX } from "../components/icons";
 
 const ALL_ROLES = ["super_admin", "admin", "hr"];
 const EMPTY_FORM = { full_name: "", phone: "", telegram_id: "", role: "hr" };
@@ -17,8 +18,9 @@ export default function Admins() {
 
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showNewForm, setShowNewForm] = useState(false);
-  const [newForm, setNewForm] = useState(EMPTY_FORM);
+  const [showModal, setShowModal] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [form, setForm] = useState(EMPTY_FORM);
 
   const assignableRoles = myRole === "super_admin" ? ALL_ROLES : ALL_ROLES.filter((r) => r !== "super_admin");
 
@@ -32,13 +34,36 @@ export default function Admins() {
 
   useEffect(load, []);
 
-  const submitNew = async (e) => {
+  const openNewModal = () => {
+    setEditingEmployee(null);
+    setForm(EMPTY_FORM);
+    setShowModal(true);
+  };
+
+  const openEditModal = (emp) => {
+    setEditingEmployee(emp);
+    setForm({
+      full_name: emp.full_name || "",
+      phone: emp.phone || "",
+      telegram_id: String(emp.telegram_id ?? ""),
+      role: emp.role,
+    });
+    setShowModal(true);
+  };
+
+  const closeModal = () => setShowModal(false);
+
+  const submitForm = async (e) => {
     e.preventDefault();
     try {
-      await createEmployee({ ...newForm, telegram_id: Number(newForm.telegram_id) });
+      const payload = { ...form, telegram_id: Number(form.telegram_id) };
+      if (editingEmployee) {
+        await updateEmployee(editingEmployee.id, payload);
+      } else {
+        await createEmployee(payload);
+      }
       toast.success(t("save"));
-      setNewForm(EMPTY_FORM);
-      setShowNewForm(false);
+      setShowModal(false);
       load();
     } catch (err) {
       toast.error(apiErrorMessage(err));
@@ -79,48 +104,9 @@ export default function Admins() {
     <div>
       <h1 className="page-title">{t("admins_title")}</h1>
 
-      <button className="btn btn-primary" onClick={() => setShowNewForm((v) => !v)}>
+      <button className="btn btn-primary" onClick={openNewModal}>
         + {t("admins_new")}
       </button>
-
-      {showNewForm && (
-        <form className="panel new-item-form" onSubmit={submitNew}>
-          <input
-            className="form-input"
-            placeholder={t("admins_full_name")}
-            value={newForm.full_name}
-            onChange={(e) => setNewForm({ ...newForm, full_name: e.target.value })}
-          />
-          <input
-            className="form-input"
-            placeholder={t("admins_phone")}
-            value={newForm.phone}
-            onChange={(e) => setNewForm({ ...newForm, phone: e.target.value })}
-          />
-          <input
-            className="form-input"
-            placeholder={t("admins_telegram_id")}
-            type="number"
-            required
-            value={newForm.telegram_id}
-            onChange={(e) => setNewForm({ ...newForm, telegram_id: e.target.value })}
-          />
-          <select
-            className="form-input"
-            value={newForm.role}
-            onChange={(e) => setNewForm({ ...newForm, role: e.target.value })}
-          >
-            {assignableRoles.map((r) => (
-              <option key={r} value={r}>
-                {t(`role_${r}`)}
-              </option>
-            ))}
-          </select>
-          <button className="btn btn-primary" type="submit">
-            {t("save")}
-          </button>
-        </form>
-      )}
 
       <table className="data-table">
         <thead>
@@ -152,6 +138,9 @@ export default function Admins() {
                 <ActiveBadge active={emp.is_active} />
               </td>
               <td className="row-actions">
+                <button className="btn btn-secondary" onClick={() => openEditModal(emp)}>
+                  <IconEdit /> {t("edit")}
+                </button>
                 <button className="btn btn-secondary" onClick={() => toggleActive(emp)}>
                   {emp.is_active ? t("inactive") : t("active")}
                 </button>
@@ -163,6 +152,74 @@ export default function Admins() {
           ))}
         </tbody>
       </table>
+
+      {showModal && (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">{editingEmployee ? t("admins_edit_title") : t("admins_new")}</h2>
+              <button type="button" className="modal-close" onClick={closeModal} aria-label={t("cancel")}>
+                <IconX />
+              </button>
+            </div>
+            <form onSubmit={submitForm}>
+              <div className="modal-body">
+                <div>
+                  <label className="form-label">{t("admins_full_name")}</label>
+                  <input
+                    className="form-input"
+                    placeholder={t("admins_full_name")}
+                    value={form.full_name}
+                    onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="form-label">{t("admins_phone")}</label>
+                  <input
+                    className="form-input"
+                    placeholder={t("admins_phone")}
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="form-label">{t("admins_telegram_id")}</label>
+                  <input
+                    className="form-input"
+                    placeholder={t("admins_telegram_id")}
+                    type="number"
+                    required
+                    value={form.telegram_id}
+                    onChange={(e) => setForm({ ...form, telegram_id: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="form-label">{t("admins_role")}</label>
+                  <select
+                    className="form-input"
+                    value={form.role}
+                    onChange={(e) => setForm({ ...form, role: e.target.value })}
+                  >
+                    {assignableRoles.map((r) => (
+                      <option key={r} value={r}>
+                        {t(`role_${r}`)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={closeModal}>
+                  {t("cancel")}
+                </button>
+                <button className="btn btn-primary" type="submit">
+                  {t("save")}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

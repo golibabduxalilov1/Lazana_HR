@@ -1,6 +1,16 @@
 export default {
   app_title: "LAZANA HR — Admin Panel",
+  login_badge: "Admin panel",
   login_title: "Tizimga kirish",
+  login_subtitle: "Davom etish uchun login va parolingizni kiriting",
+  login_hero_title_line1: "Markazlashgan",
+  login_hero_title_line2: "HR boshqaruv paneli",
+  login_hero_subtitle:
+    "Vakansiyalar va nomzodlarni yagona tizimda boshqaring. Arizalar holatini kuzating, tarixni ko'ring va jamoa bilan birga ishlang.",
+  login_feature_1: "Arizalarni real vaqtda kuzatish",
+  login_feature_2: "O'zgarishlar tarixi va audit jurnali",
+  login_feature_3: "Rollarga asoslangan boshqaruv",
+  login_footer: "Barcha huquqlar himoyalangan.",
   username: "Login",
   password: "Parol",
   login_button: "Kirish",
@@ -60,6 +70,10 @@ export default {
   apps_all: "Barchasi",
   apps_empty: "Arizalar topilmadi",
   apps_page_of: "sahifa",
+  apps_total: "Jami",
+  apps_total_suffix: "ta ariza",
+  apps_search_placeholder: "Ism yoki telefon bo'yicha qidirish...",
+  apps_export_excel: "Excel",
 
   detail_title: "Ariza tafsilotlari",
   detail_section_basic: "Asosiy ma'lumotlar",
@@ -110,6 +124,7 @@ export default {
   admins_telegram_id: "Telegram ID",
   admins_role: "Rol",
   admins_new: "Yangi admin",
+  admins_edit_title: "Xodimni tahrirlash",
   admins_status: "Holat",
 
   role_super_admin: "Super admin",

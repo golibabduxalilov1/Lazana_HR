@@ -4,7 +4,7 @@ import datetime as dt
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from admin_panel.deps import get_session, require_roles
@@ -19,6 +19,9 @@ async def export_applications_csv(
     date_from: dt.date | None = None,
     date_to: dt.date | None = None,
     status_filter: str | None = Query(default=None, alias="status"),
+    category_id: int | None = None,
+    position_id: int | None = None,
+    search: str | None = None,
     session: AsyncSession = Depends(get_session),
     _admin: Admin = Depends(require_roles("super_admin", "admin")),
 ) -> StreamingResponse:
@@ -31,6 +34,13 @@ async def export_applications_csv(
     )
     if status_filter:
         query = query.where(Application.status == status_filter)
+    if category_id:
+        query = query.where(PositionCategory.id == category_id)
+    if position_id:
+        query = query.where(Position.id == position_id)
+    if search:
+        pattern = f"%{search}%"
+        query = query.where(or_(Application.full_name.ilike(pattern), Application.phone.ilike(pattern)))
     if date_from:
         query = query.where(Application.submitted_at >= dt.datetime.combine(date_from, dt.time.min, dt.timezone.utc))
     if date_to:

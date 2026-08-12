@@ -5,6 +5,9 @@ export async function exportApplicationsCsv(filters) {
   if (filters.dateFrom) params.date_from = filters.dateFrom;
   if (filters.dateTo) params.date_to = filters.dateTo;
   if (filters.status) params.status = filters.status;
+  if (filters.categoryId) params.category_id = filters.categoryId;
+  if (filters.positionId) params.position_id = filters.positionId;
+  if (filters.search) params.search = filters.search;
 
   const response = await client.get("/api/export/applications.csv", {
     params,
