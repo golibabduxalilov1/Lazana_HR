@@ -478,13 +478,9 @@ async function changeStatus(id, newStatus) {
 }
 
 async function deleteApplication(app) {
-  const confirmed = await openConfirm({
-    title: "Arizani o'chirish",
-    message: `#${app.id} — ${app.full_name || "nomzod"} arizasini butunlay o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi. O'chirilgach, nomzod kutish muddatisiz qayta ariza topshira oladi.`,
-    confirmText: "Tasdiqlayman",
-    cancelText: "Yo'q",
-    danger: true,
-  });
+  const confirmed = confirm(
+    `#${app.id} — ${app.full_name || "nomzod"} arizasini butunlay o'chirmoqchimisiz?\nBu amalni ortga qaytarib bo'lmaydi. O'chirilgach, nomzod kutish muddatisiz qayta ariza topshira oladi.`
+  );
   if (!confirmed) return;
   try {
     await api(`/api/applications/${app.id}`, { method: "DELETE" });
