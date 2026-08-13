@@ -126,9 +126,15 @@ export default function Admins() {
               <td>{emp.phone || "—"}</td>
               <td>{emp.telegram_id}</td>
               <td>
-                <select value={emp.role} onChange={(e) => changeRole(emp, e.target.value)} className="form-input">
-                  {ALL_ROLES.map((r) => (
-                    <option key={r} value={r} disabled={r === "super_admin"}>
+                <select
+                  value={emp.role}
+                  onChange={(e) => changeRole(emp, e.target.value)}
+                  className="form-input"
+                  disabled={emp.role === "super_admin"}
+                >
+                  {emp.role === "super_admin" && <option value="super_admin">{t("role_super_admin")}</option>}
+                  {assignableRoles.map((r) => (
+                    <option key={r} value={r}>
                       {t(`role_${r}`)}
                     </option>
                   ))}
@@ -141,17 +147,21 @@ export default function Admins() {
                 <button className="btn btn-secondary btn-icon" title={t("edit")} aria-label={t("edit")} onClick={() => openEditModal(emp)}>
                   <IconEdit />
                 </button>
-                <button
-                  className="btn btn-secondary btn-icon"
-                  title={emp.is_active ? t("inactive") : t("active")}
-                  aria-label={emp.is_active ? t("inactive") : t("active")}
-                  onClick={() => toggleActive(emp)}
-                >
-                  <IconPower />
-                </button>
-                <button className="btn btn-danger btn-icon" title={t("delete")} aria-label={t("delete")} onClick={() => remove(emp)}>
-                  <IconTrash />
-                </button>
+                {emp.role !== "super_admin" && (
+                  <>
+                    <button
+                      className="btn btn-secondary btn-icon"
+                      title={emp.is_active ? t("inactive") : t("active")}
+                      aria-label={emp.is_active ? t("inactive") : t("active")}
+                      onClick={() => toggleActive(emp)}
+                    >
+                      <IconPower />
+                    </button>
+                    <button className="btn btn-danger btn-icon" title={t("delete")} aria-label={t("delete")} onClick={() => remove(emp)}>
+                      <IconTrash />
+                    </button>
+                  </>
+                )}
               </td>
             </tr>
           ))}

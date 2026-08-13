@@ -87,7 +87,12 @@ async def update_employee(
     if data.get("is_active") is False and _is_bootstrap_admin(employee):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Asosiy superadminni faolsizlantirib bo'lmaydi")
 
+    if data.get("is_active") is False and employee.role == "super_admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Superadminni faolsizlantirib bo'lmaydi")
+
     if data.get("role") is not None:
+        if employee.role == "super_admin":
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Superadmin rolini o'zgartirib bo'lmaydi")
         _ensure_can_assign_role(admin, data["role"])
 
     for field_name, value in data.items():
@@ -115,6 +120,9 @@ async def delete_employee(
 
     if _is_bootstrap_admin(employee):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Asosiy superadminni o'chirib bo'lmaydi")
+
+    if employee.role == "super_admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Superadminni o'chirib bo'lmaydi")
 
     employee.is_active = False
     await session.commit()
