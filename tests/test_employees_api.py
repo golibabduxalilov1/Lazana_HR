@@ -31,7 +31,7 @@ async def test_list_employees_allows_admin_and_super_admin(
     assert res.status_code == 200
 
 
-async def test_super_admin_can_create_super_admin(
+async def test_super_admin_cannot_create_super_admin(
     client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]
 ) -> None:
     super_admin = await make_admin(session_maker, telegram_id=10, role="super_admin")
@@ -40,10 +40,7 @@ async def test_super_admin_can_create_super_admin(
         headers=auth_headers(super_admin),
         json={"full_name": "Yangi Super", "phone": "+998901112233", "telegram_id": 999, "role": "super_admin"},
     )
-    assert res.status_code == 201
-    body = res.json()
-    assert body["role"] == "super_admin"
-    assert body["phone"] == "+998901112233"
+    assert res.status_code == 403
 
 
 async def test_admin_cannot_create_super_admin(
@@ -153,6 +150,44 @@ async def test_admin_cannot_delete_super_admin(
     admin = await make_admin(session_maker, telegram_id=53, role="admin")
     target_super = await make_admin(session_maker, telegram_id=54, role="super_admin")
     res = await client.delete(f"/api/employees/{target_super.id}", headers=auth_headers(admin))
+    assert res.status_code == 403
+
+
+async def test_bootstrap_admin_cannot_be_deleted(
+    client: AsyncClient, session_maker: async_sessionmaker[AsyncSession], monkeypatch
+) -> None:
+    from admin_panel.routers import employees as employees_router
+
+    bootstrap = await make_admin(session_maker, telegram_id=70, role="super_admin")
+    other_super_admin = await make_admin(session_maker, telegram_id=71, role="super_admin")
+    monkeypatch.setattr(
+        employees_router,
+        "get_settings",
+        lambda: type("S", (), {"bootstrap_super_admin_id": bootstrap.telegram_id})(),
+    )
+
+    res = await client.delete(f"/api/employees/{bootstrap.id}", headers=auth_headers(other_super_admin))
+    assert res.status_code == 403
+
+
+async def test_bootstrap_admin_cannot_be_deactivated(
+    client: AsyncClient, session_maker: async_sessionmaker[AsyncSession], monkeypatch
+) -> None:
+    from admin_panel.routers import employees as employees_router
+
+    bootstrap = await make_admin(session_maker, telegram_id=72, role="super_admin")
+    other_super_admin = await make_admin(session_maker, telegram_id=73, role="super_admin")
+    monkeypatch.setattr(
+        employees_router,
+        "get_settings",
+        lambda: type("S", (), {"bootstrap_super_admin_id": bootstrap.telegram_id})(),
+    )
+
+    res = await client.patch(
+        f"/api/employees/{bootstrap.id}",
+        headers=auth_headers(other_super_admin),
+        json={"is_active": False},
+    )
     assert res.status_code == 403
 
 

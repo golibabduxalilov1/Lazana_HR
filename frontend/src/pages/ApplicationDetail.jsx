@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { changeApplicationStatus, deleteApplication, getApplication } from "../services/applications";
+import {
+  changeApplicationStatus,
+  deleteApplication,
+  downloadApplicationResume,
+  getApplication,
+} from "../services/applications";
 import { useI18n } from "../context/I18nContext";
 import { useToast } from "../context/ToastContext";
 import { useConfirm } from "../context/ConfirmContext";
@@ -8,7 +13,15 @@ import { apiErrorMessage } from "../services/client";
 import { Loading } from "../components/Loading";
 import { StatusBadge } from "../components/StatusBadge";
 import { RoleGate } from "../components/RoleGate";
-import { IconUsers, IconFileText, IconCalendar, IconClock, IconTrendingUp, IconTrash } from "../components/icons";
+import {
+  IconUsers,
+  IconFileText,
+  IconCalendar,
+  IconClock,
+  IconTrendingUp,
+  IconTrash,
+  IconDownload,
+} from "../components/icons";
 
 const VALID_TRANSITIONS = {
   submitted: ["reviewed"],
@@ -56,6 +69,7 @@ export default function ApplicationDetail() {
   const [loading, setLoading] = useState(true);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [downloadingResume, setDownloadingResume] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -81,6 +95,17 @@ export default function ApplicationDetail() {
       toast.error(apiErrorMessage(err));
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDownloadResume = async () => {
+    setDownloadingResume(true);
+    try {
+      await downloadApplicationResume(id);
+    } catch (err) {
+      toast.error(apiErrorMessage(err));
+    } finally {
+      setDownloadingResume(false);
     }
   };
 
@@ -113,13 +138,24 @@ export default function ApplicationDetail() {
           <StatusBadge status={application.status} />
         </div>
 
-        <RoleGate roles={["super_admin"]}>
-          <button className="btn btn-danger !mr-0" onClick={handleDelete}>
-            <span className="inline-flex items-center gap-1.5">
-              <IconTrash /> {t("delete")}
-            </span>
+        <div className="inline-flex items-center gap-2">
+          <button
+            className="btn btn-secondary !mr-0 flex items-center gap-1.5"
+            onClick={handleDownloadResume}
+            disabled={downloadingResume}
+          >
+            <IconDownload width="16" height="16" />
+            {downloadingResume ? t("loading") : t("detail_download_resume")}
           </button>
-        </RoleGate>
+
+          <RoleGate roles={["super_admin"]}>
+            <button className="btn btn-danger !mr-0" onClick={handleDelete}>
+              <span className="inline-flex items-center gap-1.5">
+                <IconTrash /> {t("delete")}
+              </span>
+            </button>
+          </RoleGate>
+        </div>
       </div>
 
       <div className="detail-layout">

@@ -101,6 +101,7 @@ export default {
   detail_history_empty: "Tarix mavjud emas",
   detail_no_transitions: "Bu statusdan o'tish mumkin emas",
   detail_delete_confirm: "Arizani o'chirishni tasdiqlaysizmi?",
+  detail_download_resume: "Rezyume yuklab olish (PDF)",
 
   positions_title: "Lavozimlar",
   positions_name_uz: "Nomi (uz)",

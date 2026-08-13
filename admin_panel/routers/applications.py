@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime as dt
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,6 +18,7 @@ from admin_panel.schemas import (
 )
 from admin_panel.telegram import get_bot
 from app.db.models import Admin, Application, ApplicationStatusHistory, Position, PositionCategory
+from app.services import resume_pdf
 from app.services.notifications import notify_candidate_rejected
 
 router = APIRouter(prefix="/api", tags=["applications"])
@@ -147,6 +149,29 @@ async def get_application(
         submitted_at=application.submitted_at,
         created_at=application.created_at,
         status_history=status_history,
+    )
+
+
+@router.get("/applications/{application_id}/resume.pdf")
+async def get_application_resume_pdf(
+    application_id: int,
+    session: AsyncSession = Depends(get_session),
+    _admin: Admin = Depends(get_current_admin),
+) -> StreamingResponse:
+    application = await session.get(Application, application_id)
+    if application is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Ariza topilmadi")
+
+    position = await session.get(Position, application.position_id)
+    category = await session.get(PositionCategory, position.category_id)
+
+    pdf_bytes = resume_pdf.generate_resume_pdf(application, position, category)
+    filename = resume_pdf.resume_filename(application)
+
+    return StreamingResponse(
+        iter([pdf_bytes]),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 

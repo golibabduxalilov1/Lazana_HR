@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { createEmployee, deleteEmployee, listEmployees, updateEmployee } from "../services/employees";
-import { useAuth } from "../context/AuthContext";
 import { useI18n } from "../context/I18nContext";
 import { useToast } from "../context/ToastContext";
 import { useConfirm } from "../context/ConfirmContext";
@@ -16,7 +15,6 @@ export default function Admins() {
   const { t } = useI18n();
   const toast = useToast();
   const confirm = useConfirm();
-  const { role: myRole } = useAuth();
 
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +22,7 @@ export default function Admins() {
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
 
-  const assignableRoles = myRole === "super_admin" ? ALL_ROLES : ALL_ROLES.filter((r) => r !== "super_admin");
+  const assignableRoles = ALL_ROLES.filter((r) => r !== "super_admin");
 
   const load = () => {
     setLoading(true);
@@ -130,7 +128,7 @@ export default function Admins() {
               <td>
                 <select value={emp.role} onChange={(e) => changeRole(emp, e.target.value)} className="form-input">
                   {ALL_ROLES.map((r) => (
-                    <option key={r} value={r} disabled={r === "super_admin" && myRole !== "super_admin"}>
+                    <option key={r} value={r} disabled={r === "super_admin"}>
                       {t(`role_${r}`)}
                     </option>
                   ))}

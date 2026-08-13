@@ -30,6 +30,7 @@ from app.db.models import (
 )
 from app.services.export import applications_to_csv, export_filename
 from app.services.notifications import notify_candidate_rejected
+from app.services.resume_pdf import generate_resume_pdf, resume_filename
 
 router = Router(name="admin")
 router.message.filter(IsAdmin())
@@ -242,9 +243,28 @@ async def cb_app_detail(callback: CallbackQuery, session: AsyncSession, admin: A
                     )
                 ]
             )
+    rows.append(
+        [InlineKeyboardButton(text="📄 PDF yuklab olish", callback_data=f"adm:resumepdf:{application.id}")]
+    )
     rows.append([InlineKeyboardButton(text="⬅️ Ro'yxatga qaytish", callback_data="adm:apps:all:1:all")])
 
     await send_or_edit(callback, text, InlineKeyboardMarkup(inline_keyboard=rows))
+
+
+@router.callback_query(F.data.startswith("adm:resumepdf:"))
+async def cb_app_resume_pdf(callback: CallbackQuery, session: AsyncSession, admin: Admin) -> None:
+    app_id = int(callback.data.split(":")[2])
+    application = await session.get(Application, app_id)
+    if application is None:
+        await callback.answer("Ariza topilmadi.", show_alert=True)
+        return
+    position = await session.get(Position, application.position_id)
+    category = await session.get(PositionCategory, position.category_id)
+
+    pdf_bytes = generate_resume_pdf(application, position, category)
+    file = BufferedInputFile(pdf_bytes, filename=resume_filename(application))
+    await callback.message.answer_document(file, caption=f"📄 Ariza #{application.id} — rezyume")
+    await callback.answer()
 
 
 @router.callback_query(F.data.startswith("adm:setstatus:"))

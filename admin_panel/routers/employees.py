@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from admin_panel.deps import get_session, require_roles
 from admin_panel.schemas import EmployeeCreate, EmployeeOut, EmployeeUpdate
+from app.config import get_settings
 from app.db.models import Admin
 
 router = APIRouter(prefix="/api/employees", tags=["employees"])
@@ -16,13 +17,18 @@ ROLES = {"super_admin", "admin", "hr"}
 def _ensure_can_assign_role(actor: Admin, role: str) -> None:
     if role not in ROLES:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Noto'g'ri rol")
-    if actor.role == "admin" and role == "super_admin":
+    if role == "super_admin":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Superadmin huquqini bera olmaysiz")
 
 
 def _ensure_can_modify_target(actor: Admin, target: Admin) -> None:
     if actor.role == "admin" and target.role == "super_admin":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Superadmin hisobini o'zgartira olmaysiz")
+
+
+def _is_bootstrap_admin(employee: Admin) -> bool:
+    bootstrap_id = get_settings().bootstrap_super_admin_id
+    return bootstrap_id is not None and employee.telegram_id == bootstrap_id
 
 
 @router.get("", response_model=list[EmployeeOut])
@@ -78,6 +84,9 @@ async def update_employee(
     if employee.id == admin.id and ("role" in data or data.get("is_active") is False):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "O'zingizni o'zgartira olmaysiz")
 
+    if data.get("is_active") is False and _is_bootstrap_admin(employee):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Asosiy superadminni faolsizlantirib bo'lmaydi")
+
     if data.get("role") is not None:
         _ensure_can_assign_role(admin, data["role"])
 
@@ -103,6 +112,9 @@ async def delete_employee(
 
     if employee.id == admin.id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "O'zingizni o'chira olmaysiz")
+
+    if _is_bootstrap_admin(employee):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Asosiy superadminni o'chirib bo'lmaydi")
 
     employee.is_active = False
     await session.commit()
