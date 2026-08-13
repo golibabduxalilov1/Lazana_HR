@@ -30,6 +30,13 @@ const VALID_TRANSITIONS = {
   rejected: [],
 };
 
+const SALARY_LABEL_KEYS = {
+  "4m": "salary_4m",
+  "5-7m": "salary_5_7m",
+  "7-10m": "salary_7_10m",
+  "10m+": "salary_10plus",
+};
+
 function formatDate(value) {
   if (!value) return "—";
   return new Date(value).toLocaleString("uz-UZ", { dateStyle: "medium", timeStyle: "short" });
@@ -179,7 +186,14 @@ export default function ApplicationDetail() {
             <Field label={t("detail_languages_other")} value={application.languages_other} />
             <Field label={t("detail_computer_skills")} value={application.computer_skills} />
             <Field label={t("detail_key_skills")} value={application.key_skills} />
-            <Field label={t("detail_expected_salary")} value={application.expected_salary_range} />
+            <Field
+              label={t("detail_expected_salary")}
+              value={
+                application.expected_salary_range
+                  ? t(SALARY_LABEL_KEYS[application.expected_salary_range] || application.expected_salary_range)
+                  : application.expected_salary_range
+              }
+            />
           </Section>
 
           <RoleGate roles={["super_admin", "admin"]}>
