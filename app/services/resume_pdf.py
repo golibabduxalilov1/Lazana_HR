@@ -26,6 +26,13 @@ STATUS_LABELS_UZ = {
     "rejected": "Rad etilgan",
 }
 
+SALARY_LABELS_UZ = {
+    "4m": "4,000,000 so'm",
+    "5-7m": "5,000,000 – 7,000,000 so'm",
+    "7-10m": "7,000,000 – 10,000,000 so'm",
+    "10m+": "10,000,000 dan yuqori",
+}
+
 # --- Rang sxemasi -----------------------------------------------------------
 HEADER_BG = colors.HexColor("#0f172a")
 HEADER_ACCENT_TEXT = colors.HexColor("#93c5fd")
@@ -288,7 +295,10 @@ def generate_resume_pdf(application: Application, position: Position, category: 
             Spacer(1, 12),
         ]
 
-    salary_items = _main_item(styles, "Kutilayotgan maosh", application.expected_salary_range)
+    salary_label = SALARY_LABELS_UZ.get(
+        application.expected_salary_range, application.expected_salary_range
+    )
+    salary_items = _main_item(styles, "Kutilayotgan maosh", salary_label)
     if salary_items:
         main += [Paragraph("Kutilayotgan maosh", styles.main_section), _section_underline(), *salary_items]
 
