@@ -81,7 +81,9 @@ async def update_employee(
 
     data = payload.model_dump(exclude_unset=True)
 
-    if employee.id == admin.id and ("role" in data or data.get("is_active") is False):
+    role_changed = "role" in data and data["role"] != employee.role
+
+    if employee.id == admin.id and (role_changed or data.get("is_active") is False):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "O'zingizni o'zgartira olmaysiz")
 
     if data.get("is_active") is False and _is_bootstrap_admin(employee):
@@ -90,7 +92,7 @@ async def update_employee(
     if data.get("is_active") is False and employee.role == "super_admin":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Superadminni faolsizlantirib bo'lmaydi")
 
-    if data.get("role") is not None:
+    if role_changed:
         if employee.role == "super_admin":
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Superadmin rolini o'zgartirib bo'lmaydi")
         _ensure_can_assign_role(admin, data["role"])

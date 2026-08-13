@@ -118,6 +118,19 @@ async def test_cannot_deactivate_self(client: AsyncClient, session_maker: async_
     assert res.status_code == 403
 
 
+async def test_can_edit_own_profile_with_unchanged_role(
+    client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
+    super_admin = await make_admin(session_maker, telegram_id=42, role="super_admin")
+    res = await client.patch(
+        f"/api/employees/{super_admin.id}",
+        headers=auth_headers(super_admin),
+        json={"full_name": "Yangilangan ism", "phone": "+998900000000", "role": "super_admin"},
+    )
+    assert res.status_code == 200
+    assert res.json()["full_name"] == "Yangilangan ism"
+
+
 async def test_cannot_change_own_role(client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]) -> None:
     admin = await make_admin(session_maker, telegram_id=41, role="admin")
     res = await client.patch(

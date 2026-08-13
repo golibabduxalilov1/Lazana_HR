@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -9,8 +10,14 @@ from fastapi.staticfiles import StaticFiles
 from admin_panel.routers import applications, auth, employees, export, positions, stats, texts
 from admin_panel.telegram import close_bot
 
-app = FastAPI(title="LAZANA HR — Admin Panel", version="1.0.0")
-app.add_event_handler("shutdown", close_bot)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    await close_bot()
+
+
+app = FastAPI(title="LAZANA HR — Admin Panel", version="1.0.0", lifespan=lifespan)
 
 app.include_router(auth.router)
 app.include_router(applications.router)
