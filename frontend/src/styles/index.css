@@ -577,6 +577,389 @@
     @apply mt-1 flex justify-between text-xs text-ink-400;
   }
 
+  /* Dashboard: filter bar */
+  .filter-panel {
+    @apply mb-5;
+  }
+
+  .period-tabs {
+    @apply flex items-center gap-1 rounded-lg bg-page p-1;
+  }
+
+  .period-tab {
+    @apply cursor-pointer rounded-md border-none bg-transparent px-3 py-1.5 text-sm font-medium text-ink-400 transition-colors duration-150;
+  }
+
+  .period-tab:hover {
+    @apply text-ink-900;
+  }
+
+  .period-tab-active {
+    @apply bg-white text-primary-700 shadow-card;
+  }
+
+  .filter-chips {
+    @apply mt-3 flex flex-wrap items-center gap-2;
+  }
+
+  .filter-chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-primary-600/20 bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700;
+  }
+
+  .filter-chip button {
+    @apply flex h-4 w-4 cursor-pointer items-center justify-center rounded-full border-none bg-transparent p-0 text-primary-700/70 transition-colors duration-150;
+  }
+
+  .filter-chip button:hover {
+    @apply bg-primary-600/15 text-primary-700;
+  }
+
+  /* Dashboard: multi-select dropdown */
+  .multiselect {
+    @apply relative;
+  }
+
+  .multiselect-trigger {
+    @apply flex w-auto min-w-[170px] cursor-pointer items-center justify-between gap-2 text-left;
+  }
+
+  .multiselect-trigger-active {
+    @apply border-primary-600 text-primary-700;
+  }
+
+  .multiselect-trigger-label {
+    @apply truncate;
+  }
+
+  .multiselect-trigger-prefix {
+    @apply text-ink-400;
+  }
+
+  .multiselect-chevron {
+    @apply flex-shrink-0 rotate-90 text-ink-400 transition-transform duration-150;
+  }
+
+  .multiselect-chevron-open {
+    @apply -rotate-90;
+  }
+
+  .multiselect-panel {
+    @apply absolute left-0 top-[calc(100%+4px)] z-20 max-h-64 w-56 overflow-y-auto rounded-lg border border-border-subtle bg-white p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.12)];
+  }
+
+  .multiselect-option {
+    @apply flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-1.5 text-sm text-ink-600 transition-colors duration-150;
+  }
+
+  .multiselect-option:hover {
+    @apply bg-page;
+  }
+
+  .multiselect-option input {
+    @apply h-3.5 w-3.5 accent-primary-600;
+  }
+
+  .multiselect-empty {
+    @apply px-2.5 py-2 text-sm text-ink-400;
+  }
+
+  .multiselect-clear {
+    @apply mt-1 w-full cursor-pointer rounded-md border-none bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-status-repair transition-colors duration-150;
+  }
+
+  .multiselect-clear:hover {
+    @apply bg-status-repairBg;
+  }
+
+  /* Dashboard: stat card trend */
+  .stat-card-clickable {
+    @apply w-full cursor-pointer border-0 bg-white text-left transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(15,23,42,0.10)];
+  }
+
+  .stat-card-body {
+    @apply min-w-0 flex-1;
+  }
+
+  .stat-trend-row {
+    @apply mt-2 flex items-center gap-1.5;
+  }
+
+  .stat-trend {
+    @apply inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-xs font-semibold;
+  }
+
+  .stat-trend-up {
+    @apply bg-status-workingBg text-status-workingText;
+  }
+
+  .stat-trend-down {
+    @apply bg-status-repairBg text-status-repairText;
+  }
+
+  .stat-trend-neutral {
+    @apply bg-page text-ink-400;
+  }
+
+  .stat-trend-arrow {
+    @apply flex-shrink-0;
+  }
+
+  .stat-trend-caption {
+    @apply text-xs text-ink-400;
+  }
+
+  /* Dashboard: bar chart drilldown */
+  .bar-row-clickable {
+    @apply -mx-1 cursor-pointer rounded-md px-1 transition-colors duration-150;
+  }
+
+  .bar-row-clickable:hover {
+    @apply bg-page;
+  }
+
+  .bar-row-dimmed {
+    @apply opacity-40;
+  }
+
+  /* Dashboard: pie chart (SVG donut) */
+  .pie-chart-svg-wrap {
+    @apply relative h-[140px] w-[140px] flex-shrink-0;
+  }
+
+  .pie-chart-svg {
+    @apply h-full w-full;
+  }
+
+  .pie-segment {
+    @apply transition-opacity duration-150;
+  }
+
+  .pie-segment-clickable {
+    @apply cursor-pointer;
+  }
+
+  .pie-segment-clickable:hover {
+    @apply opacity-80;
+  }
+
+  .pie-segment-dimmed {
+    @apply opacity-25;
+  }
+
+  .pie-chart-tooltip {
+    @apply pointer-events-none left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2;
+  }
+
+  .pie-legend-clickable {
+    @apply cursor-pointer transition-colors duration-150;
+  }
+
+  .pie-legend-clickable:hover {
+    @apply text-ink-900;
+  }
+
+  .pie-legend-active {
+    @apply font-semibold text-ink-900;
+  }
+
+  /* Dashboard: trend comparison chart */
+  .trend-chart-wrap {
+    @apply relative;
+  }
+
+  .trend-chart-legend {
+    @apply mb-2 flex items-center gap-4 text-xs text-ink-400;
+  }
+
+  .trend-legend-item {
+    @apply flex items-center gap-1.5;
+  }
+
+  .trend-legend-swatch {
+    @apply inline-block h-2 w-4 rounded-sm;
+  }
+
+  .trend-legend-current {
+    @apply bg-primary-600;
+  }
+
+  .trend-legend-previous {
+    @apply bg-ink-400;
+  }
+
+  .trend-chart-svg {
+    @apply h-[200px] w-full;
+  }
+
+  .trend-tooltip {
+    @apply flex flex-col gap-0.5 whitespace-nowrap px-2.5 py-2 text-left;
+  }
+
+  .trend-tooltip-label {
+    @apply mb-0.5 font-semibold text-white;
+  }
+
+  .trend-tooltip-row {
+    @apply flex items-center gap-1.5;
+  }
+
+  .trend-tooltip-dot {
+    @apply inline-block h-1.5 w-1.5 rounded-full;
+  }
+
+  .trend-tooltip-dot-current {
+    @apply bg-primary-500;
+  }
+
+  .trend-tooltip-dot-previous {
+    @apply bg-ink-400;
+  }
+
+  /* Dashboard: funnel chart */
+  .funnel-chart {
+    @apply flex flex-col gap-3;
+  }
+
+  .funnel-stage {
+    @apply flex items-center gap-3;
+  }
+
+  .funnel-stage-header {
+    @apply flex w-32 flex-shrink-0 flex-col;
+  }
+
+  .funnel-stage-label {
+    @apply text-sm font-medium text-ink-600;
+  }
+
+  .funnel-stage-conversion {
+    @apply text-xs font-medium text-ink-400;
+  }
+
+  .funnel-bar-track {
+    @apply h-8 flex-1 overflow-hidden rounded-lg bg-page;
+  }
+
+  .funnel-bar-fill {
+    @apply flex h-full min-w-[2.5rem] items-center justify-end rounded-lg px-2.5 transition-all duration-200;
+  }
+
+  .funnel-bar-count {
+    @apply text-xs font-semibold text-white;
+  }
+
+  .funnel-stage-pct {
+    @apply w-12 flex-shrink-0 text-right text-sm font-semibold text-ink-900;
+  }
+
+  .funnel-rejected {
+    @apply mt-1 flex items-center;
+  }
+
+  /* Dashboard: top positions */
+  .top-positions-list {
+    @apply m-0 flex list-none flex-col gap-3.5 p-0;
+  }
+
+  .top-position-item {
+    @apply flex items-start gap-3;
+  }
+
+  .top-position-rank {
+    @apply flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-page text-xs font-bold text-ink-400;
+  }
+
+  .top-position-body {
+    @apply min-w-0 flex-1;
+  }
+
+  .top-position-row {
+    @apply flex items-center justify-between gap-2;
+  }
+
+  .top-position-name {
+    @apply truncate text-sm font-medium text-ink-900;
+  }
+
+  .top-position-count {
+    @apply flex-shrink-0 text-sm font-semibold text-ink-900;
+  }
+
+  .top-position-meta {
+    @apply text-xs text-ink-400;
+  }
+
+  .top-position-track {
+    @apply mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-page;
+  }
+
+  .top-position-fill {
+    @apply h-full rounded-full bg-primary-600 transition-all duration-200;
+  }
+
+  /* Dashboard: skeleton loaders */
+  .skeleton {
+    @apply animate-pulse rounded-md bg-page;
+  }
+
+  .skeleton-filterbar {
+    @apply mb-5 h-[70px] w-full rounded-xl;
+  }
+
+  .skeleton-circle {
+    @apply h-11 w-11 flex-shrink-0 rounded-full;
+  }
+
+  .skeleton-line {
+    @apply h-3 rounded;
+  }
+
+  .skeleton-line-lg {
+    @apply h-6 w-20;
+  }
+
+  .skeleton-line-sm {
+    @apply w-32;
+  }
+
+  .skeleton-line-xs {
+    @apply mt-2 w-24;
+  }
+
+  .skeleton-block {
+    @apply w-full rounded-lg;
+  }
+
+  /* Dashboard: empty / error states */
+  .empty-state-lg {
+    @apply flex flex-col items-center gap-2 rounded-xl border border-border-subtle bg-white p-14 text-center;
+  }
+
+  .empty-state-icon {
+    @apply mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-page text-ink-400;
+  }
+
+  .empty-state-title {
+    @apply text-base font-semibold text-ink-900;
+  }
+
+  .empty-state-subtitle {
+    @apply max-w-sm text-sm text-ink-400;
+  }
+
+  .empty-state-error .empty-state-title {
+    @apply text-status-repairText;
+  }
+
+  /* Dashboard: drilldown table */
+  .drilldown-header {
+    @apply mb-4 flex flex-wrap items-center justify-between gap-3;
+  }
+
+  .drilldown-actions {
+    @apply flex items-center gap-2;
+  }
+
   /* Detail page */
   .detail-header {
     @apply mb-5 flex flex-wrap items-center justify-between gap-3;

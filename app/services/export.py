@@ -11,31 +11,39 @@ from openpyxl.utils import get_column_letter
 from app.db.models import Application
 
 CSV_HEADERS = [
-    "id",
-    "status",
-    "category",
-    "position",
-    "full_name",
-    "phone",
-    "address",
-    "birth_date",
-    "work_experience_text",
-    "experience_years_range",
-    "education_level",
-    "education_institution",
-    "languages",
-    "expected_salary_range",
-    "computer_skills",
-    "key_skills",
-    "source",
-    "submitted_at",
+    "ID",
+    "Status",
+    "Toifa",
+    "Lavozim",
+    "F.I.Sh.",
+    "Telefon",
+    "Manzil",
+    "Tug'ilgan sana",
+    "Ish tajribasi",
+    "Tajriba (yillar)",
+    "Ta'lim darajasi",
+    "Ta'lim muassasasi",
+    "Tillar",
+    "Kutilayotgan maosh",
+    "Kompyuter ko'nikmalari",
+    "Asosiy ko'nikmalar",
+    "Manba",
+    "Yuborilgan sana",
 ]
+
+STATUS_LABELS_UZ = {
+    "draft": "Qoralama",
+    "submitted": "Yangi",
+    "reviewed": "Ko'rib chiqilgan",
+    "invited": "Taklif qilingan",
+    "rejected": "Rad etilgan",
+}
 
 
 def _application_row(app_: Application, category_name: str, position_name: str) -> list:
     return [
         app_.id,
-        app_.status,
+        STATUS_LABELS_UZ.get(app_.status, app_.status),
         category_name,
         position_name,
         app_.full_name or "",

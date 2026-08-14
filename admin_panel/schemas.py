@@ -145,10 +145,41 @@ class EmployeeUpdate(BaseModel):
     is_active: bool | None = None
 
 
+class StatsTrendPoint(BaseModel):
+    date: str
+    label: str
+    current: int
+    previous: int
+
+
+class StatsFunnelStage(BaseModel):
+    key: str
+    count: int
+    pct: float
+
+
+class StatsTopPosition(BaseModel):
+    position_id: int
+    name: str
+    category_name: str
+    count: int
+    pct: float
+
+
 class StatsSummary(BaseModel):
     total: int
+    prev_total: int
+    change_pct: float | None
     by_status: dict[str, int]
     by_category: dict[str, int]
-    last_7_days: int
-    last_30_days: int
-    daily_trend: dict[str, int]
+    reviewed_count: int
+    reviewed_change_pct: float | None
+    invited_count: int
+    invited_change_pct: float | None
+    rejected_count: int
+    avg_review_days: float | None
+    daily_trend: list[StatsTrendPoint]
+    funnel: list[StatsFunnelStage]
+    top_positions: list[StatsTopPosition]
+    date_from: dt.date
+    date_to: dt.date
