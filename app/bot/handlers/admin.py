@@ -109,23 +109,25 @@ async def render_apps_list(
     page: int,
     category_code: str = "all",
 ) -> None:
-    query = select(Application).order_by(Application.created_at.desc())
+    query = select(Application).join(Position, Application.position_id == Position.id)
     if status_filter != "all":
         query = query.where(Application.status == status_filter)
     else:
         query = query.where(Application.status != "draft")
 
     if category_code != "all":
-        query = (
-            query.join(Position, Application.position_id == Position.id)
-            .join(PositionCategory, Position.category_id == PositionCategory.id)
-            .where(PositionCategory.code == category_code)
+        query = query.join(PositionCategory, Position.category_id == PositionCategory.id).where(
+            PositionCategory.code == category_code
         )
 
     count_query = select(func.count()).select_from(query.subquery())
     total = await session.scalar(count_query) or 0
 
-    query = query.offset((page - 1) * PAGE_SIZE).limit(PAGE_SIZE)
+    query = (
+        query.order_by(Position.is_priority.desc(), Application.created_at.desc())
+        .offset((page - 1) * PAGE_SIZE)
+        .limit(PAGE_SIZE)
+    )
     applications = list(await session.scalars(query))
 
     title_filter = STATUS_LABELS.get(status_filter, "Barchasi") if status_filter != "all" else "Barchasi"
@@ -133,9 +135,11 @@ async def render_apps_list(
     cat_label = next((c.name_uz for c in categories if c.code == category_code), "Barchasi")
     lines = [f"📋 Arizalar ({title_filter} · {cat_label}) — jami: {total}"]
     rows = []
-    for app_ in applications:
+    for idx, app_ in enumerate(applications, start=1):
         position = await session.get(Position, app_.position_id)
-        label = f"#{app_.id} {app_.full_name or '-'} — {position.name_uz if position else '-'}"
+        display_num = (page - 1) * PAGE_SIZE + idx
+        star = "⭐ " if position and position.is_priority else ""
+        label = f"{star}#{display_num} {app_.full_name or '-'} — {position.name_uz if position else '-'}"
         rows.append([InlineKeyboardButton(text=label, callback_data=f"adm:app:{app_.id}")])
 
     filter_row = [
