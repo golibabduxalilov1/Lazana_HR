@@ -15,6 +15,7 @@ import Texts from "./pages/Texts";
 import Admins from "./pages/Admins";
 import NotFound from "./pages/NotFound";
 
+const ALL_ROLES = ["super_admin", "admin", "hr"];
 const ADMIN_ROLES = ["super_admin", "admin"];
 
 export default function App() {
@@ -27,15 +28,20 @@ export default function App() {
               <Routes>
                 <Route path="/login" element={<Login />} />
 
-                <Route element={<PrivateRoute roles={ADMIN_ROLES} />}>
+                <Route element={<PrivateRoute roles={ALL_ROLES} />}>
                   <Route element={<Layout />}>
                     <Route path="/" element={<Navigate to="/dashboard" replace />} />
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/applications" element={<Applications />} />
                     <Route path="/applications/:id" element={<ApplicationDetail />} />
-                    <Route path="/positions" element={<Positions />} />
-                    <Route path="/texts" element={<Texts />} />
-                    <Route path="/admins" element={<Admins />} />
+
+                    {/* HR - faqat arizalarni ko'rish/status o'zgartirish/eksport huquqiga ega;
+                        Lavozimlar/Matnlar/Xodimlar (Administratsiya) faqat admin/super_admin uchun. */}
+                    <Route element={<PrivateRoute roles={ADMIN_ROLES} />}>
+                      <Route path="/positions" element={<Positions />} />
+                      <Route path="/texts" element={<Texts />} />
+                      <Route path="/admins" element={<Admins />} />
+                    </Route>
                   </Route>
                 </Route>
 

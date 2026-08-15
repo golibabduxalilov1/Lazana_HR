@@ -166,6 +166,7 @@ export default {
   admins_title: "Adminlar",
   admins_full_name: "F.I.Sh.",
   admins_phone: "Telefon",
+  admins_phone_incomplete: "Telefon raqamini to'liq kiriting",
   admins_password: "Parol",
   admins_password_hint: "Tahrirlashda bo'sh qoldirsangiz, parol o'zgarmaydi",
   admins_telegram_id: "Telegram ID",
@@ -174,6 +175,8 @@ export default {
   admins_new: "Yangi admin",
   admins_edit_title: "Xodimni tahrirlash",
   admins_status: "Holat",
+  admins_env_admin: "asosiy",
+  admins_env_admin_hint: "Bu superadmin .env fayldan boshqariladi — faqat o'zi o'zgartira yoki o'chira oladi",
 
   role_super_admin: "Super admin",
   role_admin: "Admin",

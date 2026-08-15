@@ -9,6 +9,7 @@ import logging
 
 from sqlalchemy import select
 
+from admin_panel.security import hash_password
 from app.config import get_settings
 from app.db.models import Admin, BotText, Position, PositionCategory
 from app.db.seed_data import BOT_TEXTS, CATEGORIES, POSITIONS
@@ -65,14 +66,20 @@ async def seed() -> None:
                 select(Admin).where(Admin.telegram_id == settings.bootstrap_super_admin_id)
             )
             if not existing_admin:
-                session.add(
-                    Admin(
-                        telegram_id=settings.bootstrap_super_admin_id,
-                        full_name="Bootstrap Super Admin",
-                        role="super_admin",
-                    )
+                existing_admin = Admin(
+                    telegram_id=settings.bootstrap_super_admin_id,
+                    full_name="Bootstrap Super Admin",
+                    role="super_admin",
                 )
+                session.add(existing_admin)
                 logger.info("Bootstrap super_admin qo'shildi: %s", settings.bootstrap_super_admin_id)
+
+            existing_admin.role = "super_admin"
+            existing_admin.is_active = True
+            if settings.bootstrap_super_admin_phone:
+                existing_admin.phone = settings.bootstrap_super_admin_phone
+            if settings.bootstrap_super_admin_password:
+                existing_admin.password_hash = hash_password(settings.bootstrap_super_admin_password)
 
         await session.commit()
         logger.info("Seed muvaffaqiyatli yakunlandi.")

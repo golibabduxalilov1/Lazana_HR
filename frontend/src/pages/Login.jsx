@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useI18n } from "../context/I18nContext";
 import { apiErrorMessage } from "../services/client";
 import { IconClock, IconFileText, IconUsers } from "../components/icons";
+import { PhoneInput } from "../components/PhoneInput";
 
 export default function Login() {
   const { login } = useAuth();
@@ -126,16 +127,14 @@ export default function Login() {
                   />
                 </svg>
               </span>
-              <input
+              <PhoneInput
                 id="phone"
-                type="tel"
                 className="form-input input-with-icon"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={setPhone}
                 autoComplete="tel"
                 autoFocus
                 required
-                placeholder={t("phone")}
               />
             </div>
           </div>

@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     bot_token: str
     hr_notify_chat_id: int
     bootstrap_super_admin_id: int | None = None
+    bootstrap_super_admin_phone: str | None = None
+    bootstrap_super_admin_password: str | None = None
 
     # Database
     database_url: str

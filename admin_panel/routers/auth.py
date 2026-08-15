@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from admin_panel.deps import get_session
 from admin_panel.schemas import LoginRequest, LoginResponse
 from admin_panel.security import create_access_token, verify_password
+from app.config import get_settings
 from app.db.models import Admin
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -19,4 +20,6 @@ async def login(payload: LoginRequest, session: AsyncSession = Depends(get_sessi
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Raqam yoki parol noto'g'ri")
 
     token = create_access_token(admin.id, admin.role)
-    return LoginResponse(access_token=token, role=admin.role, full_name=admin.full_name)
+    bootstrap_id = get_settings().bootstrap_super_admin_id
+    is_env_admin = bootstrap_id is not None and admin.telegram_id == bootstrap_id
+    return LoginResponse(access_token=token, role=admin.role, full_name=admin.full_name, is_env_admin=is_env_admin)

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import datetime as dt
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, computed_field
+
+from app.config import get_settings
 
 
 class LoginRequest(BaseModel):
@@ -15,6 +17,7 @@ class LoginResponse(BaseModel):
     token_type: str = "bearer"
     role: str
     full_name: str | None = None
+    is_env_admin: bool = False
 
 
 class CategoryOut(BaseModel):
@@ -134,6 +137,12 @@ class EmployeeOut(BaseModel):
     telegram_id: int | None
     role: str
     is_active: bool
+
+    @computed_field
+    @property
+    def is_env_admin(self) -> bool:
+        bootstrap_id = get_settings().bootstrap_super_admin_id
+        return bootstrap_id is not None and self.telegram_id == bootstrap_id
 
 
 class EmployeeCreate(BaseModel):

@@ -18,13 +18,16 @@ ROLES = {"super_admin", "admin", "hr"}
 def _ensure_can_assign_role(actor: Admin, role: str) -> None:
     if role not in ROLES:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Noto'g'ri rol")
-    if role == "super_admin":
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Superadmin huquqini bera olmaysiz")
+    if role == "super_admin" and not _is_bootstrap_admin(actor):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Superadmin huquqini faqat asosiy (.env) superadmin bera oladi")
 
 
 def _ensure_can_modify_target(actor: Admin, target: Admin) -> None:
-    if actor.role == "admin" and target.role == "super_admin":
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Superadmin hisobini o'zgartira olmaysiz")
+    is_self = actor.id == target.id
+    if _is_bootstrap_admin(target) and not is_self:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Asosiy (.env) superadmin ma'lumotlarini faqat o'zi o'zgartira oladi")
+    if target.role == "super_admin" and not is_self and not _is_bootstrap_admin(actor):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Superadminni faqat asosiy (.env) superadmin boshqara oladi")
 
 
 def _is_bootstrap_admin(employee: Admin) -> bool:
@@ -91,15 +94,7 @@ async def update_employee(
     if employee.id == admin.id and (role_changed or data.get("is_active") is False):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "O'zingizni o'zgartira olmaysiz")
 
-    if data.get("is_active") is False and _is_bootstrap_admin(employee):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Asosiy superadminni faolsizlantirib bo'lmaydi")
-
-    if data.get("is_active") is False and employee.role == "super_admin":
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Superadminni faolsizlantirib bo'lmaydi")
-
     if role_changed:
-        if employee.role == "super_admin":
-            raise HTTPException(status.HTTP_403_FORBIDDEN, "Superadmin rolini o'zgartirib bo'lmaydi")
         _ensure_can_assign_role(admin, data["role"])
 
     if "phone" in data and data["phone"] and data["phone"] != employee.phone:
@@ -142,12 +137,6 @@ async def delete_employee(
 
     if employee.id == admin.id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "O'zingizni o'chira olmaysiz")
-
-    if _is_bootstrap_admin(employee):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Asosiy superadminni o'chirib bo'lmaydi")
-
-    if employee.role == "super_admin":
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Superadminni o'chirib bo'lmaydi")
 
     employee.is_active = False
     await session.commit()

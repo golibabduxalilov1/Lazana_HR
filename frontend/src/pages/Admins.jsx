@@ -7,7 +7,9 @@ import { useAuth } from "../context/AuthContext";
 import { apiErrorMessage } from "../services/client";
 import { Loading } from "../components/Loading";
 import { ActiveBadge } from "../components/ActiveBadge";
+import { PhoneInput } from "../components/PhoneInput";
 import { IconEdit, IconPower, IconTrash, IconX } from "../components/icons";
+import { formatUzPhoneReadable, isCompleteUzPhone } from "../utils/phone";
 
 const ALL_ROLES = ["super_admin", "admin", "hr"];
 const EMPTY_FORM = { full_name: "", phone: "", password: "", telegram_id: "", role: "hr" };
@@ -16,7 +18,7 @@ export default function Admins() {
   const { t } = useI18n();
   const toast = useToast();
   const confirm = useConfirm();
-  const { isSuperAdmin } = useAuth();
+  const { isEnvSuperAdmin, adminId } = useAuth();
 
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +26,7 @@ export default function Admins() {
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
 
-  const assignableRoles = ALL_ROLES.filter((r) => r !== "super_admin");
+  const assignableRoles = isEnvSuperAdmin ? ALL_ROLES : ALL_ROLES.filter((r) => r !== "super_admin");
 
   const load = () => {
     setLoading(true);
@@ -58,6 +60,10 @@ export default function Admins() {
 
   const submitForm = async (e) => {
     e.preventDefault();
+    if (!isCompleteUzPhone(form.phone)) {
+      toast.error(t("admins_phone_incomplete"));
+      return;
+    }
     try {
       const payload = {
         ...form,
@@ -96,7 +102,7 @@ export default function Admins() {
   };
 
   const remove = async (emp) => {
-    if (!(await confirm(`${t("delete")}: ${emp.full_name || emp.phone || emp.telegram_id}?`))) return;
+    if (!(await confirm(`${t("delete")}: ${emp.full_name || formatUzPhoneReadable(emp.phone) || emp.telegram_id}?`))) return;
     try {
       await deleteEmployee(emp.id);
       load();
@@ -128,20 +134,28 @@ export default function Admins() {
         </thead>
         <tbody>
           {employees.map((emp) => {
-            const canModify = isSuperAdmin || emp.role !== "super_admin";
+            const isSelf = adminId != null && String(emp.id) === String(adminId);
+            // Only the .env superadmin (or the account itself) may edit a super_admin row;
+            // only the .env superadmin may deactivate/delete another superadmin. The backend
+            // enforces this regardless — these just keep the UI from offering actions that would 403.
+            const canEdit = isSelf || emp.role !== "super_admin" || isEnvSuperAdmin;
+            const canChangeRole = !isSelf && (emp.role !== "super_admin" || isEnvSuperAdmin);
+            const canDeactivateOrDelete = !isSelf && (emp.role !== "super_admin" || isEnvSuperAdmin);
             return (
             <tr key={emp.id}>
-              <td>{emp.full_name || "—"}</td>
-              <td>{emp.phone || "—"}</td>
+              <td>{emp.full_name || "—"}{emp.is_env_admin && <span className="badge" title={t("admins_env_admin_hint")}> · {t("admins_env_admin")}</span>}</td>
+              <td>{formatUzPhoneReadable(emp.phone) || "—"}</td>
               <td>{emp.telegram_id ?? "—"}</td>
               <td>
                 <select
                   value={emp.role}
                   onChange={(e) => changeRole(emp, e.target.value)}
                   className="form-input"
-                  disabled={emp.role === "super_admin"}
+                  disabled={!canChangeRole}
                 >
-                  {emp.role === "super_admin" && <option value="super_admin">{t("role_super_admin")}</option>}
+                  {emp.role === "super_admin" && !assignableRoles.includes("super_admin") && (
+                    <option value="super_admin">{t("role_super_admin")}</option>
+                  )}
                   {assignableRoles.map((r) => (
                     <option key={r} value={r}>
                       {t(`role_${r}`)}
@@ -153,12 +167,12 @@ export default function Admins() {
                 <ActiveBadge active={emp.is_active} />
               </td>
               <td className="row-actions">
-                {canModify && (
+                {canEdit && (
                   <button className="btn btn-secondary btn-icon" title={t("edit")} aria-label={t("edit")} onClick={() => openEditModal(emp)}>
                     <IconEdit />
                   </button>
                 )}
-                {emp.role !== "super_admin" && (
+                {canDeactivateOrDelete && (
                   <>
                     <button
                       className="btn btn-secondary btn-icon"
@@ -203,13 +217,10 @@ export default function Admins() {
                 </div>
                 <div>
                   <label className="form-label">{t("admins_phone")}</label>
-                  <input
-                    className="form-input"
-                    placeholder={t("admins_phone")}
-                    type="tel"
+                  <PhoneInput
                     required
                     value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    onChange={(phone) => setForm({ ...form, phone })}
                   />
                 </div>
                 <div>
