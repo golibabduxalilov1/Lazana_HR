@@ -36,6 +36,7 @@ class PositionOut(BaseModel):
     name_ru: str | None
     sort_order: int
     is_active: bool
+    is_priority: bool
 
 
 class PositionCreate(BaseModel):
@@ -43,6 +44,7 @@ class PositionCreate(BaseModel):
     name_uz: str
     name_ru: str | None = None
     sort_order: int = 0
+    is_priority: bool = False
 
 
 class PositionUpdate(BaseModel):
@@ -51,6 +53,7 @@ class PositionUpdate(BaseModel):
     name_ru: str | None = None
     sort_order: int | None = None
     is_active: bool | None = None
+    is_priority: bool | None = None
 
 
 class ApplicationListItem(BaseModel):

@@ -8,9 +8,10 @@ import { apiErrorMessage } from "../services/client";
 import { Loading } from "../components/Loading";
 import { RoleGate } from "../components/RoleGate";
 import { ActiveBadge } from "../components/ActiveBadge";
+import { PriorityBadge } from "../components/PriorityBadge";
 import { IconEdit, IconPower, IconTrash } from "../components/icons";
 
-const EMPTY_FORM = { category_id: "", name_uz: "", name_ru: "", sort_order: 0 };
+const EMPTY_FORM = { category_id: "", name_uz: "", name_ru: "", sort_order: 0, is_priority: false };
 
 export default function Positions() {
   const { t } = useI18n();
@@ -40,7 +41,13 @@ export default function Positions() {
 
   const startEdit = (p) => {
     setEditingId(p.id);
-    setEditForm({ category_id: p.category_id, name_uz: p.name_uz, name_ru: p.name_ru || "", sort_order: p.sort_order });
+    setEditForm({
+      category_id: p.category_id,
+      name_uz: p.name_uz,
+      name_ru: p.name_ru || "",
+      sort_order: p.sort_order,
+      is_priority: p.is_priority,
+    });
   };
 
   const saveEdit = async (id) => {
@@ -50,6 +57,7 @@ export default function Positions() {
         name_uz: editForm.name_uz,
         name_ru: editForm.name_ru || null,
         sort_order: Number(editForm.sort_order),
+        is_priority: editForm.is_priority,
       });
       toast.success(t("save"));
       setEditingId(null);
@@ -86,6 +94,7 @@ export default function Positions() {
         name_uz: newForm.name_uz,
         name_ru: newForm.name_ru || null,
         sort_order: Number(newForm.sort_order) || 0,
+        is_priority: newForm.is_priority,
       });
       toast.success(t("save"));
       setNewForm(EMPTY_FORM);
@@ -142,6 +151,14 @@ export default function Positions() {
               value={newForm.sort_order}
               onChange={(e) => setNewForm({ ...newForm, sort_order: e.target.value })}
             />
+            <label>
+              <input
+                type="checkbox"
+                checked={newForm.is_priority}
+                onChange={(e) => setNewForm({ ...newForm, is_priority: e.target.checked })}
+              />
+              {" "}{t("positions_priority")}
+            </label>
             <button className="btn btn-primary" type="submit">
               {t("save")}
             </button>
@@ -159,6 +176,7 @@ export default function Positions() {
                 <th>{t("positions_name_ru")}</th>
                 <th>{t("positions_sort_order")}</th>
                 <th>{t("active")}</th>
+                <th>{t("positions_priority")}</th>
                 <RoleGate roles={["super_admin", "admin"]}>
                   <th />
                 </RoleGate>
@@ -193,6 +211,13 @@ export default function Positions() {
                         />
                       </td>
                       <td>{p.is_active ? t("active") : t("inactive")}</td>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={editForm.is_priority}
+                          onChange={(e) => setEditForm({ ...editForm, is_priority: e.target.checked })}
+                        />
+                      </td>
                       <td className="row-actions">
                         <button className="btn btn-primary" onClick={() => saveEdit(p.id)}>
                           {t("save")}
@@ -209,6 +234,9 @@ export default function Positions() {
                       <td>{p.sort_order}</td>
                       <td>
                         <ActiveBadge active={p.is_active} />
+                      </td>
+                      <td>
+                        <PriorityBadge priority={p.is_priority} />
                       </td>
                       <RoleGate roles={["super_admin", "admin"]}>
                         <td className="row-actions">

@@ -17,7 +17,7 @@ async def list_positions(
     session: AsyncSession = Depends(get_session),
     _admin: Admin = Depends(get_current_admin),
 ) -> list[PositionOut]:
-    query = select(Position).order_by(Position.category_id, Position.sort_order)
+    query = select(Position).order_by(Position.is_priority.desc(), Position.category_id, Position.sort_order)
     if category_id:
         query = query.where(Position.category_id == category_id)
     rows = await session.scalars(query)

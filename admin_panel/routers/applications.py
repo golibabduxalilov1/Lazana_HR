@@ -75,7 +75,11 @@ async def list_applications(
 
     total = await session.scalar(select(func.count()).select_from(query.subquery())) or 0
 
-    query = query.order_by(Application.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
+    query = (
+        query.order_by(Position.is_priority.desc(), Application.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
     rows = (await session.execute(query)).all()
 
     items = [

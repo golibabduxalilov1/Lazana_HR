@@ -51,7 +51,7 @@ async def load_active_positions(session: AsyncSession, category_id: int) -> list
     result = await session.scalars(
         select(Position)
         .where(Position.category_id == category_id, Position.is_active.is_(True))
-        .order_by(Position.sort_order)
+        .order_by(Position.is_priority.desc(), Position.sort_order)
     )
     return list(result)
 

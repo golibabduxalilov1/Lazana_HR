@@ -153,6 +153,9 @@ export default {
   positions_sort_order: "Tartib raqami",
   positions_new: "Yangi lavozim",
   positions_category: "Toifa",
+  positions_priority: "Ustuvor",
+  priority_yes: "Yuqori",
+  priority_no: "Oddiy",
 
   texts_title: "Statik matnlar",
   texts_key: "Kalit",
