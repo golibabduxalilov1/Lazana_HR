@@ -114,7 +114,7 @@ export default function Positions() {
         </button>
       </RoleGate>
 
-      <div className="period-tabs mb-5 border border-border-subtle bg-white shadow-card">
+      <div className="period-tabs mb-5 inline-flex w-fit border border-border-subtle bg-white">
         {categories.map((cat) => (
           <button
             key={cat.id}
