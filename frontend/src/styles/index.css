@@ -388,6 +388,10 @@
     @apply bg-status-idleBg;
   }
 
+  .data-row-priority td {
+    @apply border-b-status-idle/30;
+  }
+
   .row-actions {
     @apply flex flex-row items-center justify-center gap-1.5 whitespace-nowrap;
   }
