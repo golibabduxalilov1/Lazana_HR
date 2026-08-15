@@ -10,7 +10,7 @@ import { ActiveBadge } from "../components/ActiveBadge";
 import { IconEdit, IconPower, IconTrash, IconX } from "../components/icons";
 
 const ALL_ROLES = ["super_admin", "admin", "hr"];
-const EMPTY_FORM = { full_name: "", phone: "", telegram_id: "", role: "hr" };
+const EMPTY_FORM = { full_name: "", phone: "", password: "", telegram_id: "", role: "hr" };
 
 export default function Admins() {
   const { t } = useI18n();
@@ -47,7 +47,8 @@ export default function Admins() {
     setForm({
       full_name: emp.full_name || "",
       phone: emp.phone || "",
-      telegram_id: String(emp.telegram_id ?? ""),
+      password: "",
+      telegram_id: emp.telegram_id != null ? String(emp.telegram_id) : "",
       role: emp.role,
     });
     setShowModal(true);
@@ -58,8 +59,12 @@ export default function Admins() {
   const submitForm = async (e) => {
     e.preventDefault();
     try {
-      const payload = { ...form, telegram_id: Number(form.telegram_id) };
+      const payload = {
+        ...form,
+        telegram_id: form.telegram_id.trim() === "" ? null : Number(form.telegram_id),
+      };
       if (editingEmployee) {
+        if (!payload.password) delete payload.password;
         await updateEmployee(editingEmployee.id, payload);
       } else {
         await createEmployee(payload);
@@ -91,7 +96,7 @@ export default function Admins() {
   };
 
   const remove = async (emp) => {
-    if (!(await confirm(`${t("delete")}: ${emp.full_name || emp.telegram_id}?`))) return;
+    if (!(await confirm(`${t("delete")}: ${emp.full_name || emp.phone || emp.telegram_id}?`))) return;
     try {
       await deleteEmployee(emp.id);
       load();
@@ -128,7 +133,7 @@ export default function Admins() {
             <tr key={emp.id}>
               <td>{emp.full_name || "—"}</td>
               <td>{emp.phone || "—"}</td>
-              <td>{emp.telegram_id}</td>
+              <td>{emp.telegram_id ?? "—"}</td>
               <td>
                 <select
                   value={emp.role}
@@ -191,6 +196,7 @@ export default function Admins() {
                   <input
                     className="form-input"
                     placeholder={t("admins_full_name")}
+                    required
                     value={form.full_name}
                     onChange={(e) => setForm({ ...form, full_name: e.target.value })}
                   />
@@ -200,9 +206,24 @@ export default function Admins() {
                   <input
                     className="form-input"
                     placeholder={t("admins_phone")}
+                    type="tel"
+                    required
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
                   />
+                </div>
+                <div>
+                  <label className="form-label">{t("admins_password")}</label>
+                  <input
+                    className="form-input"
+                    placeholder={t("admins_password")}
+                    type="password"
+                    autoComplete="new-password"
+                    required={!editingEmployee}
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  />
+                  {editingEmployee && <p className="form-hint">{t("admins_password_hint")}</p>}
                 </div>
                 <div>
                   <label className="form-label">{t("admins_telegram_id")}</label>
@@ -210,10 +231,10 @@ export default function Admins() {
                     className="form-input"
                     placeholder={t("admins_telegram_id")}
                     type="number"
-                    required
                     value={form.telegram_id}
                     onChange={(e) => setForm({ ...form, telegram_id: e.target.value })}
                   />
+                  <p className="form-hint">{t("admins_telegram_id_hint")}</p>
                 </div>
                 <div>
                   <label className="form-label">{t("admins_role")}</label>

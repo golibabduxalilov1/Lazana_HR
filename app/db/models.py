@@ -132,16 +132,16 @@ class Admin(Base):
     __tablename__ = "admins"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
+    # Telegram ID ixtiyoriy: berilmasa, xodim botda oddiy user bo'lib qoladi (IsAdmin filter
+    # telegram_id bo'yicha qidiradi), berilsa — rol bo'yicha huquqlarga ega bo'ladi.
+    telegram_id: Mapped[int | None] = mapped_column(BigInteger, unique=True)
     full_name: Mapped[str | None] = mapped_column(String(255))
-    phone: Mapped[str | None] = mapped_column(String(20))
+    # Web admin panelga kirish uchun login sifatida ishlatiladi (parol bilan birga).
+    phone: Mapped[str | None] = mapped_column(String(20), unique=True)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="hr")  # super_admin | admin | hr
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    # Web admin panel login (ixtiyoriy — faqat web panelga kiradigan super_admin/admin uchun
-    # to'ldiriladi; HR uchun har doim NULL bo'lishi kerak, chunki HR web panelga kira olmaydi)
-    username: Mapped[str | None] = mapped_column(String(100), unique=True)
     password_hash: Mapped[str | None] = mapped_column(String(255))
 
 

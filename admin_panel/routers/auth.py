@@ -14,11 +14,9 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 @router.post("/login", response_model=LoginResponse)
 async def login(payload: LoginRequest, session: AsyncSession = Depends(get_session)) -> LoginResponse:
-    admin = await session.scalar(select(Admin).where(Admin.username == payload.username, Admin.is_active.is_(True)))
-    if admin is not None and admin.role == "hr":
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "HR xodimlari web admin panelga kira olmaydi")
+    admin = await session.scalar(select(Admin).where(Admin.phone == payload.phone, Admin.is_active.is_(True)))
     if admin is None or not admin.password_hash or not verify_password(payload.password, admin.password_hash):
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Login yoki parol noto'g'ri")
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Raqam yoki parol noto'g'ri")
 
     token = create_access_token(admin.id, admin.role)
     return LoginResponse(access_token=token, role=admin.role, full_name=admin.full_name)

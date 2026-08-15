@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from admin_panel.deps import get_session, require_roles
 from admin_panel.schemas import EmployeeCreate, EmployeeOut, EmployeeUpdate
+from admin_panel.security import hash_password
 from app.config import get_settings
 from app.db.models import Admin
 
@@ -48,17 +49,21 @@ async def create_employee(
 ) -> EmployeeOut:
     _ensure_can_assign_role(admin, payload.role)
 
-    existing = await session.scalar(select(Admin).where(Admin.telegram_id == payload.telegram_id))
-    if existing is not None:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Bu Telegram ID bilan xodim allaqachon mavjud")
+    existing_phone = await session.scalar(select(Admin).where(Admin.phone == payload.phone))
+    if existing_phone is not None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Bu telefon raqami bilan xodim allaqachon mavjud")
+
+    if payload.telegram_id is not None:
+        existing_tg = await session.scalar(select(Admin).where(Admin.telegram_id == payload.telegram_id))
+        if existing_tg is not None:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Bu Telegram ID bilan xodim allaqachon mavjud")
 
     employee = Admin(
         telegram_id=payload.telegram_id,
         full_name=payload.full_name,
         phone=payload.phone,
         role=payload.role,
-        username=None,
-        password_hash=None,
+        password_hash=hash_password(payload.password),
     )
     session.add(employee)
     await session.commit()
@@ -96,6 +101,24 @@ async def update_employee(
         if employee.role == "super_admin":
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Superadmin rolini o'zgartirib bo'lmaydi")
         _ensure_can_assign_role(admin, data["role"])
+
+    if "phone" in data and data["phone"] and data["phone"] != employee.phone:
+        existing_phone = await session.scalar(
+            select(Admin).where(Admin.phone == data["phone"], Admin.id != employee.id)
+        )
+        if existing_phone is not None:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Bu telefon raqami bilan xodim allaqachon mavjud")
+
+    if "telegram_id" in data and data["telegram_id"] is not None and data["telegram_id"] != employee.telegram_id:
+        existing_tg = await session.scalar(
+            select(Admin).where(Admin.telegram_id == data["telegram_id"], Admin.id != employee.id)
+        )
+        if existing_tg is not None:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Bu Telegram ID bilan xodim allaqachon mavjud")
+
+    password = data.pop("password", None)
+    if password:
+        employee.password_hash = hash_password(password)
 
     for field_name, value in data.items():
         setattr(employee, field_name, value)

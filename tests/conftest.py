@@ -44,7 +44,7 @@ async def client(session_maker: async_sessionmaker[AsyncSession]) -> AsyncIterat
 async def make_admin(
     session_maker: async_sessionmaker[AsyncSession],
     *,
-    telegram_id: int,
+    telegram_id: int | None,
     role: str,
     full_name: str | None = None,
     with_login: bool = True,
@@ -55,7 +55,7 @@ async def make_admin(
             role=role,
             full_name=full_name,
             is_active=True,
-            username=f"user{telegram_id}" if with_login else None,
+            phone=f"+99890{telegram_id:07d}" if with_login and telegram_id is not None else None,
             password_hash=hash_password("Passw0rd!") if with_login else None,
         )
         session.add(admin)

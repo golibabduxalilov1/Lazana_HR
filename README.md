@@ -42,7 +42,7 @@ TZ bo'lim 11 dagi ochiq savollar bo'yicha quyidagi qarorlar qabul qilindi — ke
 5. **Hosting** — hujjatlashtirilmagan, istalgan Ubuntu 22.04+ VPS da Python + PostgreSQL + Redis o'rnatib ishga tushiriladi.
 6. **Ma'lumotlarni saqlash muddati** — MVPda avtomatik arxivlash/o'chirish yo'q; `application_status_history` orqali to'liq tarix saqlanadi, keyinchalik retensiya siyosati alohida qo'shilishi mumkin.
 
-Qo'shimcha qaror: **web-admin login** uchun `admins` jadvaliga ixtiyoriy `username`/`password_hash` ustunlari qo'shildi (faqat web-panelga kiradigan adminlar uchun to'ldiriladi; bot-ichi admin faqat Telegram ID whitelisting orqali ishlaydi, TZ 7.5 ga mos).
+Qo'shimcha qaror: **web-admin login** telefon raqami + parol orqali amalga oshiriladi (`admins.phone` — login, `admins.password_hash` — parol). Xodim qo'shishda Telegram ID ixtiyoriy: berilmasa, xodim faqat web-panelga kira oladigan oddiy bot-user bo'lib qoladi; berilsa, botda ham roli bo'yicha huquqlarga ega bo'ladi (`app/bot/filters.py`dagi `IsAdmin` filter Telegram ID orqali qidiradi).
 
 Rollar (TZ 6.3): `viewer` — faqat ko'rish; `hr` — ko'rish + status o'zgartirish + eksport; `super_admin` — bulardan tashqari lavozimlar/matnlar/adminlarni boshqarish.
 
@@ -83,14 +83,15 @@ uvicorn admin_panel.main:app --reload --port 8000
 4. Botga Telegramda `/start` yuboring — ishlashi kerak. `/admin` buyrug'i faqat
    `BOOTSTRAP_SUPER_ADMIN_ID` sifatida ko'rsatilgan Telegram ID uchun ishlaydi.
 
-5. Web-admin panelga kirish uchun login/parol o'rnating:
+5. Web-admin panelga kirish uchun birinchi super-adminni o'rnating (keyingi xodimlarni endi
+   web-panelning "Xodim qo'shish" formasidan qo'shishingiz mumkin):
 
 ```bash
 python -m app.db.create_web_admin \
-  --telegram-id 123456789 --username hr_admin --password "KuchliParol123" --role super_admin --full-name "Ism Familiya"
+  --phone "+998901234567" --password "KuchliParol123" --role super_admin --full-name "Ism Familiya"
 ```
 
-So'ng `http://localhost:8000` ga kirib, shu login/parol bilan tizimga kiring.
+So'ng `http://localhost:8000` ga kirib, shu telefon raqami/parol bilan tizimga kiring.
 
 ## 5. Testlar
 
@@ -133,7 +134,9 @@ Productionga to'g'ridan-to'g'ri `ALTER TABLE` bilan kirish taqiqlangan (TZ 4.12)
 ### Web-admin panel (`http://<server>:8000`)
 
 Bot-ichi rejimning barcha imkoniyatlari + qulayroq jadval ko'rinishi, qidiruv va filtrlash.
-Login/parol `create_web_admin.py` skripti orqali beriladi (yuqoriga qarang).
+Birinchi super-admin `create_web_admin.py` skripti orqali beriladi (yuqoriga qarang); keyingi
+xodimlar **Adminlar** bo'limidagi "Xodim qo'shish" formasi orqali qo'shiladi — F.I.Sh., telefon
+raqami (login), parol va rol majburiy, Telegram ID esa ixtiyoriy (faqat bot-ichi huquqlar uchun kerak).
 
 ## 8. Xavfsizlik eslatmalari (production uchun)
 

@@ -38,7 +38,13 @@ async def test_super_admin_cannot_create_super_admin(
     res = await client.post(
         "/api/employees",
         headers=auth_headers(super_admin),
-        json={"full_name": "Yangi Super", "phone": "+998901112233", "telegram_id": 999, "role": "super_admin"},
+        json={
+            "full_name": "Yangi Super",
+            "phone": "+998901112233",
+            "password": "Passw0rd1",
+            "telegram_id": 999,
+            "role": "super_admin",
+        },
     )
     assert res.status_code == 403
 
@@ -50,7 +56,13 @@ async def test_admin_cannot_create_super_admin(
     res = await client.post(
         "/api/employees",
         headers=auth_headers(admin),
-        json={"full_name": "X", "phone": None, "telegram_id": 1000, "role": "super_admin"},
+        json={
+            "full_name": "X",
+            "phone": "+998901112211",
+            "password": "Passw0rd1",
+            "telegram_id": 1000,
+            "role": "super_admin",
+        },
     )
     assert res.status_code == 403
 
@@ -62,11 +74,31 @@ async def test_admin_can_create_hr_and_admin(
     res = await client.post(
         "/api/employees",
         headers=auth_headers(admin),
-        json={"full_name": "HR odam", "phone": None, "telegram_id": 1001, "role": "hr"},
+        json={
+            "full_name": "HR odam",
+            "phone": "+998901112212",
+            "password": "Passw0rd1",
+            "telegram_id": 1001,
+            "role": "hr",
+        },
     )
     assert res.status_code == 201
     body = res.json()
     assert body["role"] == "hr"
+
+
+async def test_create_employee_without_telegram_id_has_no_bot_role(
+    client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
+    admin = await make_admin(session_maker, telegram_id=13, role="admin")
+    res = await client.post(
+        "/api/employees",
+        headers=auth_headers(admin),
+        json={"full_name": "Web-only HR", "phone": "+998901112213", "password": "Passw0rd1", "role": "hr"},
+    )
+    assert res.status_code == 201
+    body = res.json()
+    assert body["telegram_id"] is None
 
 
 async def test_create_employee_duplicate_telegram_id_rejected(
@@ -77,7 +109,31 @@ async def test_create_employee_duplicate_telegram_id_rejected(
     res = await client.post(
         "/api/employees",
         headers=auth_headers(super_admin),
-        json={"full_name": "Dup", "phone": None, "telegram_id": existing.telegram_id, "role": "hr"},
+        json={
+            "full_name": "Dup",
+            "phone": "+998901112220",
+            "password": "Passw0rd1",
+            "telegram_id": existing.telegram_id,
+            "role": "hr",
+        },
+    )
+    assert res.status_code == 400
+
+
+async def test_create_employee_duplicate_phone_rejected(
+    client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
+    super_admin = await make_admin(session_maker, telegram_id=22, role="super_admin")
+    res = await client.post(
+        "/api/employees",
+        headers=auth_headers(super_admin),
+        json={
+            "full_name": "Dup Phone",
+            "phone": super_admin.phone,
+            "password": "Passw0rd1",
+            "telegram_id": 1002,
+            "role": "hr",
+        },
     )
     assert res.status_code == 400
 
@@ -204,22 +260,44 @@ async def test_bootstrap_admin_cannot_be_deactivated(
     assert res.status_code == 403
 
 
-async def test_hr_login_rejected_even_with_correct_password(
-    client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await make_admin(session_maker, telegram_id=60, role="hr", with_login=True)
+async def test_hr_login_succeeds(client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]) -> None:
+    hr = await make_admin(session_maker, telegram_id=60, role="hr", with_login=True)
     res = await client.post(
         "/api/auth/login",
-        json={"username": "user60", "password": "Passw0rd!"},
+        json={"phone": hr.phone, "password": "Passw0rd!"},
     )
-    assert res.status_code == 403
+    assert res.status_code == 200
+    assert res.json()["role"] == "hr"
 
 
 async def test_admin_login_succeeds(client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]) -> None:
-    await make_admin(session_maker, telegram_id=61, role="admin", with_login=True)
+    admin = await make_admin(session_maker, telegram_id=61, role="admin", with_login=True)
     res = await client.post(
         "/api/auth/login",
-        json={"username": "user61", "password": "Passw0rd!"},
+        json={"phone": admin.phone, "password": "Passw0rd!"},
     )
     assert res.status_code == 200
     assert res.json()["role"] == "admin"
+
+
+async def test_login_wrong_password_rejected(
+    client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
+    admin = await make_admin(session_maker, telegram_id=62, role="admin", with_login=True)
+    res = await client.post(
+        "/api/auth/login",
+        json={"phone": admin.phone, "password": "wrong"},
+    )
+    assert res.status_code == 401
+
+
+async def test_login_without_password_set_rejected(
+    client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
+    hr = await make_admin(session_maker, telegram_id=63, role="hr", with_login=False)
+    hr_phone = f"+99890{hr.telegram_id:07d}"
+    res = await client.post(
+        "/api/auth/login",
+        json={"phone": hr_phone, "password": "whatever"},
+    )
+    assert res.status_code == 401

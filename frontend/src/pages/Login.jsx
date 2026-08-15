@@ -11,7 +11,7 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [username, setUsername] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -22,7 +22,7 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      await login(username, password);
+      await login(phone, password);
       const dest = location.state?.from?.pathname || "/dashboard";
       navigate(dest, { replace: true });
     } catch (err) {
@@ -112,30 +112,30 @@ export default function Login() {
           <p className="login-subtitle">{t("login_subtitle")}</p>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="username">
-              {t("username")}
+            <label className="form-label" htmlFor="phone">
+              {t("phone")}
             </label>
             <div className="input-group">
               <span className="input-icon" aria-hidden="true">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="8" r="3.6" stroke="currentColor" strokeWidth="1.6" />
                   <path
-                    d="M4.5 20c1.4-3.8 4.4-5.8 7.5-5.8s6.1 2 7.5 5.8"
+                    d="M5.5 4.5h3l1.4 4-2 1.4a11 11 0 0 0 5.2 5.2l1.4-2 4 1.4v3c0 1-.9 1.7-1.8 1.5-6.6-1.1-11.6-6.1-12.7-12.7C4.9 5.4 5.6 4.5 5.5 4.5Z"
                     stroke="currentColor"
-                    strokeWidth="1.6"
-                    strokeLinecap="round"
+                    strokeWidth="1.4"
+                    strokeLinejoin="round"
                   />
                 </svg>
               </span>
               <input
-                id="username"
+                id="phone"
+                type="tel"
                 className="form-input input-with-icon"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                autoComplete="tel"
                 autoFocus
                 required
-                placeholder={t("username")}
+                placeholder={t("phone")}
               />
             </div>
           </div>

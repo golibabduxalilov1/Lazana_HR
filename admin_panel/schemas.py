@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class LoginRequest(BaseModel):
-    username: str
+    phone: str
     password: str
 
 
@@ -131,21 +131,24 @@ class EmployeeOut(BaseModel):
     id: int
     full_name: str | None
     phone: str | None
-    telegram_id: int
+    telegram_id: int | None
     role: str
     is_active: bool
 
 
 class EmployeeCreate(BaseModel):
-    full_name: str | None = None
-    phone: str | None = None
-    telegram_id: int
+    full_name: str
+    phone: str
+    password: str
+    telegram_id: int | None = None
     role: str
 
 
 class EmployeeUpdate(BaseModel):
     full_name: str | None = None
     phone: str | None = None
+    password: str | None = None
+    telegram_id: int | None = None
     role: str | None = None
     is_active: bool | None = None
 

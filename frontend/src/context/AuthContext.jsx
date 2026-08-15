@@ -14,8 +14,8 @@ function readStoredAuth() {
 export function AuthProvider({ children }) {
   const [auth, setAuth] = useState(readStoredAuth);
 
-  const login = useCallback(async (username, password) => {
-    const data = await loginRequest(username, password);
+  const login = useCallback(async (phone, password) => {
+    const data = await loginRequest(phone, password);
     localStorage.setItem("lazana_token", data.access_token);
     localStorage.setItem("lazana_role", data.role);
     localStorage.setItem("lazana_full_name", data.full_name || "");
