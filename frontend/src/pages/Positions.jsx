@@ -24,6 +24,7 @@ export default function Positions() {
   const [showModal, setShowModal] = useState(false);
   const [editingPosition, setEditingPosition] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [activeCategoryId, setActiveCategoryId] = useState(null);
 
   const load = () => {
     setLoading(true);
@@ -31,6 +32,7 @@ export default function Positions() {
       .then(([cats, pos]) => {
         setCategories(cats);
         setPositions(pos);
+        setActiveCategoryId((prev) => (prev != null && cats.some((c) => c.id === prev) ? prev : cats[0]?.id));
       })
       .catch((err) => toast.error(apiErrorMessage(err)))
       .finally(() => setLoading(false));
@@ -40,7 +42,7 @@ export default function Positions() {
 
   const openNewModal = () => {
     setEditingPosition(null);
-    setForm(EMPTY_FORM);
+    setForm({ ...EMPTY_FORM, category_id: activeCategoryId ?? "" });
     setShowModal(true);
   };
 
@@ -112,60 +114,77 @@ export default function Positions() {
         </button>
       </RoleGate>
 
-      {categories.map((cat) => (
-        <div className="panel" key={cat.id}>
-          <h2 className="panel-title">{cat.name_uz}</h2>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>{t("positions_name_uz")}</th>
-                <th>{t("positions_name_ru")}</th>
-                <th>{t("positions_sort_order")}</th>
-                <th>{t("active")}</th>
-                <th>{t("positions_priority")}</th>
-                <RoleGate roles={["super_admin", "admin"]}>
-                  <th />
-                </RoleGate>
-              </tr>
-            </thead>
-            <tbody>
-              {positions
-                .filter((p) => p.category_id === cat.id)
-                .map((p) => (
-                  <tr key={p.id}>
-                    <td>{p.name_uz}</td>
-                    <td>{p.name_ru || "—"}</td>
-                    <td>{p.sort_order}</td>
-                    <td>
-                      <ActiveBadge active={p.is_active} />
-                    </td>
-                    <td>
-                      <PriorityBadge priority={p.is_priority} />
-                    </td>
-                    <RoleGate roles={["super_admin", "admin"]}>
-                      <td className="row-actions">
-                        <button className="btn btn-secondary btn-icon" title={t("edit")} aria-label={t("edit")} onClick={() => openEditModal(p)}>
-                          <IconEdit />
-                        </button>
-                        <button
-                          className="btn btn-secondary btn-icon"
-                          title={p.is_active ? t("inactive") : t("active")}
-                          aria-label={p.is_active ? t("inactive") : t("active")}
-                          onClick={() => toggleActive(p)}
-                        >
-                          <IconPower />
-                        </button>
-                        <button className="btn btn-danger btn-icon" title={t("delete")} aria-label={t("delete")} onClick={() => remove(p)}>
-                          <IconTrash />
-                        </button>
+      <div className="period-tabs">
+        {categories.map((cat) => (
+          <button
+            key={cat.id}
+            type="button"
+            className={`period-tab${activeCategoryId === cat.id ? " period-tab-active" : ""}`}
+            onClick={() => setActiveCategoryId(cat.id)}
+          >
+            {cat.name_uz}
+          </button>
+        ))}
+      </div>
+
+      {(() => {
+        const cat = categories.find((c) => c.id === activeCategoryId);
+        if (!cat) return null;
+        return (
+          <div className="panel" key={cat.id}>
+            <h2 className="panel-title">{cat.name_uz}</h2>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>{t("positions_name_uz")}</th>
+                  <th>{t("positions_name_ru")}</th>
+                  <th>{t("positions_sort_order")}</th>
+                  <th>{t("active")}</th>
+                  <th>{t("positions_priority")}</th>
+                  <RoleGate roles={["super_admin", "admin"]}>
+                    <th />
+                  </RoleGate>
+                </tr>
+              </thead>
+              <tbody>
+                {positions
+                  .filter((p) => p.category_id === cat.id)
+                  .map((p) => (
+                    <tr key={p.id}>
+                      <td>{p.name_uz}</td>
+                      <td>{p.name_ru || "—"}</td>
+                      <td>{p.sort_order}</td>
+                      <td>
+                        <ActiveBadge active={p.is_active} />
                       </td>
-                    </RoleGate>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-      ))}
+                      <td>
+                        <PriorityBadge priority={p.is_priority} />
+                      </td>
+                      <RoleGate roles={["super_admin", "admin"]}>
+                        <td className="row-actions">
+                          <button className="btn btn-secondary btn-icon" title={t("edit")} aria-label={t("edit")} onClick={() => openEditModal(p)}>
+                            <IconEdit />
+                          </button>
+                          <button
+                            className="btn btn-secondary btn-icon"
+                            title={p.is_active ? t("inactive") : t("active")}
+                            aria-label={p.is_active ? t("inactive") : t("active")}
+                            onClick={() => toggleActive(p)}
+                          >
+                            <IconPower />
+                          </button>
+                          <button className="btn btn-danger btn-icon" title={t("delete")} aria-label={t("delete")} onClick={() => remove(p)}>
+                            <IconTrash />
+                          </button>
+                        </td>
+                      </RoleGate>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
 
       <RoleGate roles={["super_admin", "admin"]}>
         {showModal && (
