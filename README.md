@@ -25,7 +25,7 @@ app/
     middlewares/                 — DB sessiya + rate limiting
   services/
     notifications.py              — HR guruhiga bildirishnoma
-    export.py                       — CSV eksport generatori
+    export.py                       — Excel eksport generatori
 admin_panel/               — FastAPI web-admin (JWT autentifikatsiya + statik SPA)
 alembic/                    — DB migratsiyalari
 tests/                        — unit testlar (validatorlar)
@@ -127,7 +127,7 @@ Productionga to'g'ridan-to'g'ri `ALTER TABLE` bilan kirish taqiqlangan (TZ 4.12)
 - **📋 Arizalar** — holat bo'yicha filtrlab ko'rish, arizani ochib statusini o'zgartirish
   (`Yuborilgan → Ko'rib chiqilgan → Taklif qilingan / Rad etilgan`), izoh qoldirish.
 - **📊 Statistika** — jami/haftalik/oylik son, holat va yo'nalish bo'yicha taqsimot.
-- **📤 Eksport** — tanlangan davr uchun CSV fayl (Excel da ochiladi).
+- **📤 Eksport** — tanlangan davr uchun Excel (.xlsx) fayl.
 - **🏷 Lavozimlar**, **📝 Matnlar**, **👤 Adminlar** — faqat `super_admin` roli uchun.
 
 ### Web-admin panel (`http://<server>:8000`)

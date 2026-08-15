@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import csv
 import datetime as dt
 import io
 
@@ -63,17 +62,6 @@ def _application_row(app_: Application, category_name: str, position_name: str) 
     ]
 
 
-def applications_to_csv(rows: list[tuple[Application, str, str]]) -> str:
-    """rows: [(application, category_name_uz, position_name_uz), ...]"""
-    buffer = io.StringIO()
-    writer = csv.writer(buffer)
-    writer.writerow(CSV_HEADERS)
-
-    for app_, category_name, position_name in rows:
-        writer.writerow(_application_row(app_, category_name, position_name))
-    return buffer.getvalue()
-
-
 def applications_to_xlsx(rows: list[tuple[Application, str, str]]) -> bytes:
     """rows: [(application, category_name_uz, position_name_uz), ...]"""
     wb = Workbook()
@@ -100,6 +88,6 @@ def applications_to_xlsx(rows: list[tuple[Application, str, str]]) -> bytes:
     return buffer.getvalue()
 
 
-def export_filename(prefix: str = "lazana_applications", ext: str = "csv") -> str:
+def export_filename(prefix: str = "lazana_applications", ext: str = "xlsx") -> str:
     stamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
     return f"{prefix}_{stamp}.{ext}"

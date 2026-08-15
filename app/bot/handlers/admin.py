@@ -28,7 +28,7 @@ from app.db.models import (
     Position,
     PositionCategory,
 )
-from app.services.export import applications_to_csv, export_filename
+from app.services.export import applications_to_xlsx, export_filename
 from app.services.notifications import notify_candidate_rejected
 from app.services.resume_pdf import generate_resume_pdf, resume_filename
 
@@ -50,7 +50,7 @@ NEXT_STATUS = {"submitted": ["reviewed"], "reviewed": ["invited", "rejected"]}
 
 MENU_APPS = "📋 Arizalar"
 MENU_STATS = "📊 Statistika"
-MENU_EXPORT = "📤 Eksport (CSV)"
+MENU_EXPORT = "📤 Eksport (Excel)"
 MENU_POSITIONS = "🏷 Lavozimlar"
 MENU_TEXTS = "📝 Matnlar"
 MENU_ADMINS = "👤 Xodimlar"
@@ -392,7 +392,7 @@ async def msg_stats(message: Message, session: AsyncSession, admin: Admin) -> No
 
 
 # ---------------------------------------------------------------------------
-# Eksport (CSV)
+# Eksport (Excel)
 # ---------------------------------------------------------------------------
 
 async def render_export_menu(target: Message | CallbackQuery) -> None:
@@ -435,8 +435,8 @@ async def cb_export_period(callback: CallbackQuery, session: AsyncSession, admin
         query = query.where(Application.submitted_at >= cutoff)
 
     rows = [(app_, cat_name, pos_name) for app_, cat_name, pos_name in (await session.execute(query)).all()]
-    csv_text = applications_to_csv(rows)
-    file = BufferedInputFile(csv_text.encode("utf-8-sig"), filename=export_filename())
+    xlsx_bytes = applications_to_xlsx(rows)
+    file = BufferedInputFile(xlsx_bytes, filename=export_filename(ext="xlsx"))
     await callback.message.answer_document(file, caption=f"Eksport: {len(rows)} ta ariza")
     await callback.answer()
 
