@@ -9,7 +9,7 @@ import { Loading } from "../components/Loading";
 import { RoleGate } from "../components/RoleGate";
 import { ActiveBadge } from "../components/ActiveBadge";
 import { PriorityBadge } from "../components/PriorityBadge";
-import { IconEdit, IconPower, IconTrash } from "../components/icons";
+import { IconEdit, IconPower, IconTrash, IconX } from "../components/icons";
 
 const EMPTY_FORM = { category_id: "", name_uz: "", name_ru: "", sort_order: 0, is_priority: false };
 
@@ -21,10 +21,9 @@ export default function Positions() {
   const [categories, setCategories] = useState([]);
   const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState(EMPTY_FORM);
-  const [newForm, setNewForm] = useState(EMPTY_FORM);
-  const [showNewForm, setShowNewForm] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [editingPosition, setEditingPosition] = useState(null);
+  const [form, setForm] = useState(EMPTY_FORM);
 
   const load = () => {
     setLoading(true);
@@ -39,33 +38,25 @@ export default function Positions() {
 
   useEffect(load, []);
 
-  const startEdit = (p) => {
-    setEditingId(p.id);
-    setEditForm({
+  const openNewModal = () => {
+    setEditingPosition(null);
+    setForm(EMPTY_FORM);
+    setShowModal(true);
+  };
+
+  const openEditModal = (p) => {
+    setEditingPosition(p);
+    setForm({
       category_id: p.category_id,
       name_uz: p.name_uz,
       name_ru: p.name_ru || "",
       sort_order: p.sort_order,
       is_priority: p.is_priority,
     });
+    setShowModal(true);
   };
 
-  const saveEdit = async (id) => {
-    try {
-      await updatePosition(id, {
-        category_id: Number(editForm.category_id),
-        name_uz: editForm.name_uz,
-        name_ru: editForm.name_ru || null,
-        sort_order: Number(editForm.sort_order),
-        is_priority: editForm.is_priority,
-      });
-      toast.success(t("save"));
-      setEditingId(null);
-      load();
-    } catch (err) {
-      toast.error(apiErrorMessage(err));
-    }
-  };
+  const closeModal = () => setShowModal(false);
 
   const toggleActive = async (p) => {
     try {
@@ -86,19 +77,23 @@ export default function Positions() {
     }
   };
 
-  const submitNew = async (e) => {
+  const submitForm = async (e) => {
     e.preventDefault();
     try {
-      await createPosition({
-        category_id: Number(newForm.category_id),
-        name_uz: newForm.name_uz,
-        name_ru: newForm.name_ru || null,
-        sort_order: Number(newForm.sort_order) || 0,
-        is_priority: newForm.is_priority,
-      });
+      const payload = {
+        category_id: Number(form.category_id),
+        name_uz: form.name_uz,
+        name_ru: form.name_ru || null,
+        sort_order: Number(form.sort_order) || 0,
+        is_priority: form.is_priority,
+      };
+      if (editingPosition) {
+        await updatePosition(editingPosition.id, payload);
+      } else {
+        await createPosition(payload);
+      }
       toast.success(t("save"));
-      setNewForm(EMPTY_FORM);
-      setShowNewForm(false);
+      setShowModal(false);
       load();
     } catch (err) {
       toast.error(apiErrorMessage(err));
@@ -112,58 +107,9 @@ export default function Positions() {
       <h1 className="page-title">{t("positions_title")}</h1>
 
       <RoleGate roles={["super_admin", "admin"]}>
-        <button className="btn btn-primary" onClick={() => setShowNewForm((v) => !v)}>
+        <button className="btn btn-primary" onClick={openNewModal}>
           + {t("positions_new")}
         </button>
-
-        {showNewForm && (
-          <form className="panel new-item-form" onSubmit={submitNew}>
-            <select
-              className="form-input"
-              value={newForm.category_id}
-              required
-              onChange={(e) => setNewForm({ ...newForm, category_id: e.target.value })}
-            >
-              <option value="">{t("positions_category")}</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name_uz}
-                </option>
-              ))}
-            </select>
-            <input
-              className="form-input"
-              placeholder={t("positions_name_uz")}
-              value={newForm.name_uz}
-              required
-              onChange={(e) => setNewForm({ ...newForm, name_uz: e.target.value })}
-            />
-            <input
-              className="form-input"
-              placeholder={t("positions_name_ru")}
-              value={newForm.name_ru}
-              onChange={(e) => setNewForm({ ...newForm, name_ru: e.target.value })}
-            />
-            <input
-              type="number"
-              className="form-input"
-              placeholder={t("positions_sort_order")}
-              value={newForm.sort_order}
-              onChange={(e) => setNewForm({ ...newForm, sort_order: e.target.value })}
-            />
-            <label>
-              <input
-                type="checkbox"
-                checked={newForm.is_priority}
-                onChange={(e) => setNewForm({ ...newForm, is_priority: e.target.checked })}
-              />
-              {" "}{t("positions_priority")}
-            </label>
-            <button className="btn btn-primary" type="submit">
-              {t("save")}
-            </button>
-          </form>
-        )}
       </RoleGate>
 
       {categories.map((cat) => (
@@ -185,84 +131,123 @@ export default function Positions() {
             <tbody>
               {positions
                 .filter((p) => p.category_id === cat.id)
-                .map((p) =>
-                  editingId === p.id ? (
-                    <tr key={p.id}>
-                      <td>
-                        <input
-                          className="form-input"
-                          value={editForm.name_uz}
-                          onChange={(e) => setEditForm({ ...editForm, name_uz: e.target.value })}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          className="form-input"
-                          value={editForm.name_ru}
-                          onChange={(e) => setEditForm({ ...editForm, name_ru: e.target.value })}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          className="form-input"
-                          value={editForm.sort_order}
-                          onChange={(e) => setEditForm({ ...editForm, sort_order: e.target.value })}
-                        />
-                      </td>
-                      <td>{p.is_active ? t("active") : t("inactive")}</td>
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={editForm.is_priority}
-                          onChange={(e) => setEditForm({ ...editForm, is_priority: e.target.checked })}
-                        />
-                      </td>
+                .map((p) => (
+                  <tr key={p.id}>
+                    <td>{p.name_uz}</td>
+                    <td>{p.name_ru || "—"}</td>
+                    <td>{p.sort_order}</td>
+                    <td>
+                      <ActiveBadge active={p.is_active} />
+                    </td>
+                    <td>
+                      <PriorityBadge priority={p.is_priority} />
+                    </td>
+                    <RoleGate roles={["super_admin", "admin"]}>
                       <td className="row-actions">
-                        <button className="btn btn-primary" onClick={() => saveEdit(p.id)}>
-                          {t("save")}
+                        <button className="btn btn-secondary btn-icon" title={t("edit")} aria-label={t("edit")} onClick={() => openEditModal(p)}>
+                          <IconEdit />
                         </button>
-                        <button className="btn btn-secondary" onClick={() => setEditingId(null)}>
-                          {t("cancel")}
+                        <button
+                          className="btn btn-secondary btn-icon"
+                          title={p.is_active ? t("inactive") : t("active")}
+                          aria-label={p.is_active ? t("inactive") : t("active")}
+                          onClick={() => toggleActive(p)}
+                        >
+                          <IconPower />
+                        </button>
+                        <button className="btn btn-danger btn-icon" title={t("delete")} aria-label={t("delete")} onClick={() => remove(p)}>
+                          <IconTrash />
                         </button>
                       </td>
-                    </tr>
-                  ) : (
-                    <tr key={p.id}>
-                      <td>{p.name_uz}</td>
-                      <td>{p.name_ru || "—"}</td>
-                      <td>{p.sort_order}</td>
-                      <td>
-                        <ActiveBadge active={p.is_active} />
-                      </td>
-                      <td>
-                        <PriorityBadge priority={p.is_priority} />
-                      </td>
-                      <RoleGate roles={["super_admin", "admin"]}>
-                        <td className="row-actions">
-                          <button className="btn btn-secondary btn-icon" title={t("edit")} aria-label={t("edit")} onClick={() => startEdit(p)}>
-                            <IconEdit />
-                          </button>
-                          <button
-                            className="btn btn-secondary btn-icon"
-                            title={p.is_active ? t("inactive") : t("active")}
-                            aria-label={p.is_active ? t("inactive") : t("active")}
-                            onClick={() => toggleActive(p)}
-                          >
-                            <IconPower />
-                          </button>
-                          <button className="btn btn-danger btn-icon" title={t("delete")} aria-label={t("delete")} onClick={() => remove(p)}>
-                            <IconTrash />
-                          </button>
-                        </td>
-                      </RoleGate>
-                    </tr>
-                  )
-                )}
+                    </RoleGate>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
       ))}
+
+      <RoleGate roles={["super_admin", "admin"]}>
+        {showModal && (
+          <div className="modal-overlay" onClick={closeModal}>
+            <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2 className="modal-title">{editingPosition ? t("positions_edit_title") : t("positions_new")}</h2>
+                <button type="button" className="modal-close" onClick={closeModal} aria-label={t("cancel")}>
+                  <IconX />
+                </button>
+              </div>
+              <form onSubmit={submitForm}>
+                <div className="modal-body">
+                  <div>
+                    <label className="form-label">{t("positions_category")}</label>
+                    <select
+                      className="form-input"
+                      value={form.category_id}
+                      required
+                      onChange={(e) => setForm({ ...form, category_id: e.target.value })}
+                    >
+                      <option value="">{t("positions_category")}</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name_uz}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="form-label">{t("positions_name_uz")}</label>
+                    <input
+                      className="form-input"
+                      placeholder={t("positions_name_uz")}
+                      value={form.name_uz}
+                      required
+                      onChange={(e) => setForm({ ...form, name_uz: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">{t("positions_name_ru")}</label>
+                    <input
+                      className="form-input"
+                      placeholder={t("positions_name_ru")}
+                      value={form.name_ru}
+                      onChange={(e) => setForm({ ...form, name_ru: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">{t("positions_sort_order")}</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      placeholder={t("positions_sort_order")}
+                      value={form.sort_order}
+                      onChange={(e) => setForm({ ...form, sort_order: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={form.is_priority}
+                        onChange={(e) => setForm({ ...form, is_priority: e.target.checked })}
+                      />
+                      {" "}{t("positions_priority")}
+                    </label>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={closeModal}>
+                    {t("cancel")}
+                  </button>
+                  <button className="btn btn-primary" type="submit">
+                    {t("save")}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </RoleGate>
     </div>
   );
 }

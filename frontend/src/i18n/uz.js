@@ -154,6 +154,7 @@ export default {
   positions_new: "Yangi lavozim",
   positions_category: "Toifa",
   positions_priority: "Ustuvor",
+  positions_edit_title: "Lavozimni tahrirlash",
   priority_yes: "Yuqori",
   priority_no: "Oddiy",
 
