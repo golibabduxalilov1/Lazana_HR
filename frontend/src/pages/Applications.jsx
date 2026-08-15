@@ -223,13 +223,13 @@ export default function Applications() {
               </tr>
             </thead>
             <tbody>
-              {result.items.map((item) => (
+              {result.items.map((item, index) => (
                 <tr
                   key={item.id}
                   className={`data-row${item.is_priority ? " data-row-priority" : ""}`}
                   onClick={() => navigate(`/applications/${item.id}?${searchParams.toString()}`)}
                 >
-                  <td>{item.id}</td>
+                  <td>{(result.page - 1) * result.page_size + index + 1}</td>
                   <td>{item.full_name || "—"}</td>
                   <td>{item.position_name}</td>
                   <td>{item.category_name}</td>
