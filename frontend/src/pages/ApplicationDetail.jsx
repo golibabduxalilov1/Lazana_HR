@@ -12,6 +12,7 @@ import { useConfirm } from "../context/ConfirmContext";
 import { apiErrorMessage } from "../services/client";
 import { Loading } from "../components/Loading";
 import { StatusBadge } from "../components/StatusBadge";
+import { PriorityBadge } from "../components/PriorityBadge";
 import { RoleGate } from "../components/RoleGate";
 import {
   IconUsers,
@@ -170,7 +171,13 @@ export default function ApplicationDetail() {
           <Section icon={<IconUsers />} title={t("detail_section_basic")}>
             <Field label={t("apps_full_name")} value={application.full_name} />
             <Field label={t("apps_phone")} value={application.phone} />
-            <Field label={t("apps_position")} value={application.position_name} />
+            <div className="detail-field">
+              <div className="detail-field-label">{t("apps_position")}</div>
+              <div className="detail-field-value flex items-center gap-1.5">
+                {application.position_name}
+                {application.is_priority && <PriorityBadge priority />}
+              </div>
+            </div>
             <Field label={t("apps_category")} value={application.category_name} />
             <Field label={t("detail_birth_date")} value={application.birth_date} />
             <Field label={t("detail_address")} value={application.address} />

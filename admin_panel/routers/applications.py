@@ -137,6 +137,7 @@ async def get_application(
         status=application.status,
         category_name=category.name_uz,
         position_name=position.name_uz,
+        is_priority=position.is_priority,
         full_name=application.full_name,
         phone=application.phone,
         address=application.address,

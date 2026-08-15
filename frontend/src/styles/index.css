@@ -171,14 +171,6 @@
     @apply border-status-repair bg-white text-status-repair hover:bg-status-repair hover:text-white;
   }
 
-  .btn-info {
-    @apply border-status-info bg-white text-status-info hover:bg-status-info hover:text-white;
-  }
-
-  .btn-warning {
-    @apply border-status-idle bg-white text-status-idle hover:bg-status-idle hover:text-white;
-  }
-
   .btn-icon {
     @apply m-0 flex h-8 w-8 items-center justify-center p-0;
   }
@@ -388,8 +380,16 @@
     @apply bg-page;
   }
 
+  .data-row-priority {
+    @apply bg-status-idleBg;
+  }
+
+  .data-row-priority:hover {
+    @apply bg-status-idleBg;
+  }
+
   .row-actions {
-    @apply flex flex-row items-center justify-center gap-2.5 whitespace-nowrap;
+    @apply flex flex-row items-center justify-center gap-1.5 whitespace-nowrap;
   }
 
   .empty-state {

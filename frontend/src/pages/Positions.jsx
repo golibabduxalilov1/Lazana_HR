@@ -114,7 +114,7 @@ export default function Positions() {
         </button>
       </RoleGate>
 
-      <div className="period-tabs">
+      <div className="period-tabs mb-5 border border-border-subtle bg-white shadow-card">
         {categories.map((cat) => (
           <button
             key={cat.id}
@@ -162,11 +162,11 @@ export default function Positions() {
                       </td>
                       <RoleGate roles={["super_admin", "admin"]}>
                         <td className="row-actions">
-                          <button className="btn btn-info btn-icon" title={t("edit")} aria-label={t("edit")} onClick={() => openEditModal(p)}>
+                          <button className="btn btn-secondary btn-icon" title={t("edit")} aria-label={t("edit")} onClick={() => openEditModal(p)}>
                             <IconEdit />
                           </button>
                           <button
-                            className="btn btn-warning btn-icon"
+                            className="btn btn-secondary btn-icon"
                             title={p.is_active ? t("inactive") : t("active")}
                             aria-label={p.is_active ? t("inactive") : t("active")}
                             onClick={() => toggleActive(p)}

@@ -82,6 +82,7 @@ class ApplicationDetail(BaseModel):
     status: str
     category_name: str
     position_name: str
+    is_priority: bool
     full_name: str | None
     phone: str | None
     address: str | None
