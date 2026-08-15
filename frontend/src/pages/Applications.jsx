@@ -10,6 +10,7 @@ import { useConfirm } from "../context/ConfirmContext";
 import { apiErrorMessage } from "../services/client";
 import { Loading } from "../components/Loading";
 import { StatusBadge } from "../components/StatusBadge";
+import { PriorityBadge } from "../components/PriorityBadge";
 import { Pagination } from "../components/Pagination";
 import { RoleGate } from "../components/RoleGate";
 import { IconDownload, IconTrash } from "../components/icons";
@@ -231,7 +232,12 @@ export default function Applications() {
                 >
                   <td>{item.id}</td>
                   <td>{item.full_name || "—"}</td>
-                  <td>{item.position_name}</td>
+                  <td>
+                    <div className="flex items-center gap-1.5">
+                      {item.position_name}
+                      {item.is_priority && <PriorityBadge priority />}
+                    </div>
+                  </td>
                   <td>{item.category_name}</td>
                   <td>{item.phone || "—"}</td>
                   <td>

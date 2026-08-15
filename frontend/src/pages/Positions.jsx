@@ -162,11 +162,11 @@ export default function Positions() {
                       </td>
                       <RoleGate roles={["super_admin", "admin"]}>
                         <td className="row-actions">
-                          <button className="btn btn-secondary btn-icon" title={t("edit")} aria-label={t("edit")} onClick={() => openEditModal(p)}>
+                          <button className="btn btn-info btn-icon" title={t("edit")} aria-label={t("edit")} onClick={() => openEditModal(p)}>
                             <IconEdit />
                           </button>
                           <button
-                            className="btn btn-secondary btn-icon"
+                            className="btn btn-warning btn-icon"
                             title={p.is_active ? t("inactive") : t("active")}
                             aria-label={p.is_active ? t("inactive") : t("active")}
                             onClick={() => toggleActive(p)}

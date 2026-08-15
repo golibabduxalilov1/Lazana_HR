@@ -63,6 +63,7 @@ class ApplicationListItem(BaseModel):
     phone: str | None
     category_name: str
     position_name: str
+    is_priority: bool
     submitted_at: dt.datetime | None
     created_at: dt.datetime
 

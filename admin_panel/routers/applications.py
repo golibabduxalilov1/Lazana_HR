@@ -53,7 +53,7 @@ async def list_applications(
     _admin: Admin = Depends(get_current_admin),
 ) -> ApplicationListResponse:
     query = (
-        select(Application, PositionCategory.name_uz, Position.name_uz)
+        select(Application, PositionCategory.name_uz, Position.name_uz, Position.is_priority)
         .join(Position, Application.position_id == Position.id)
         .join(PositionCategory, Position.category_id == PositionCategory.id)
         .where(Application.status != "draft")
@@ -90,10 +90,11 @@ async def list_applications(
             phone=app_.phone,
             category_name=cat_name,
             position_name=pos_name,
+            is_priority=is_priority,
             submitted_at=app_.submitted_at,
             created_at=app_.created_at,
         )
-        for app_, cat_name, pos_name in rows
+        for app_, cat_name, pos_name, is_priority in rows
     ]
     return ApplicationListResponse(total=total, page=page, page_size=page_size, items=items)
 
