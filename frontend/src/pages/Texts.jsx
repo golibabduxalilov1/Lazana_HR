@@ -5,6 +5,13 @@ import { useToast } from "../context/ToastContext";
 import { apiErrorMessage } from "../services/client";
 import { Loading } from "../components/Loading";
 
+const TEXT_KEY_LABELS = {
+  about_us: "Kompaniya haqida",
+  rejection_message: "Rad etish xabari",
+  thanks_message: "Minnatdorchilik xabari",
+  welcome_message: "Xush kelibsiz xabari",
+};
+
 export default function Texts() {
   const { t } = useI18n();
   const toast = useToast();
@@ -56,7 +63,7 @@ export default function Texts() {
 
       {texts.map((row) => (
         <div className="panel" key={row.key}>
-          <h2 className="panel-title">{row.key}</h2>
+          <h2 className="panel-title">{TEXT_KEY_LABELS[row.key] || row.key}</h2>
           <label className="form-label">{t("texts_uz")}</label>
           <textarea
             className="form-input"
