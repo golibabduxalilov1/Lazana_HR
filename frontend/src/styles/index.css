@@ -453,19 +453,57 @@
 
   /* Toast */
   .toast-container {
-    @apply fixed right-4 top-4 z-[1000] flex flex-col gap-2;
+    @apply fixed right-4 top-4 z-[1000] flex w-[360px] max-w-[92vw] flex-col gap-3;
   }
 
   .toast {
-    @apply max-w-[340px] cursor-pointer rounded-lg px-4 py-3 text-sm text-white shadow-[0_6px_20px_rgba(0,0,0,0.15)] animate-slide-up;
+    @apply flex cursor-pointer items-start gap-3 rounded-xl border-l-[5px] bg-white px-4 py-3.5 text-sm font-medium shadow-[0_10px_30px_rgba(15,23,42,0.18)] animate-slide-up;
+  }
+
+  .toast-icon {
+    @apply flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full;
+  }
+
+  .toast-icon-svg {
+    @apply h-4 w-4;
+  }
+
+  .toast-message {
+    @apply flex-1 pt-0.5 leading-snug text-ink-900;
+  }
+
+  .toast-close {
+    @apply -mr-1 -mt-1 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-lg leading-none text-ink-400 transition-colors duration-150 hover:bg-page hover:text-ink-900;
   }
 
   .toast-error {
-    @apply bg-status-repair;
+    @apply border-status-repair bg-status-repairBg;
+  }
+  .toast-error .toast-icon {
+    @apply bg-status-repair text-white;
+  }
+  .toast-error .toast-message {
+    @apply text-status-repairText;
   }
 
   .toast-success {
-    @apply bg-status-working;
+    @apply border-status-working bg-status-workingBg;
+  }
+  .toast-success .toast-icon {
+    @apply bg-status-working text-white;
+  }
+  .toast-success .toast-message {
+    @apply text-status-workingText;
+  }
+
+  .toast-warning {
+    @apply border-status-idle bg-status-idleBg;
+  }
+  .toast-warning .toast-icon {
+    @apply bg-status-idle text-white;
+  }
+  .toast-warning .toast-message {
+    @apply text-status-idleText;
   }
 
   /* Stat cards */
