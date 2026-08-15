@@ -1,7 +1,7 @@
 import { useAuth } from "../context/AuthContext";
 
-export function RoleGate({ roles, children }) {
+export function RoleGate({ roles, children, fallback = null }) {
   const { role } = useAuth();
-  if (!roles.includes(role)) return null;
+  if (!roles.includes(role)) return fallback;
   return children;
 }

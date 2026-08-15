@@ -19,8 +19,8 @@ const NAV_GROUPS = [
     labelKey: "nav_group_management",
     items: [
       { to: "/applications", labelKey: "nav_applications", icon: IconInbox, roles: ["super_admin", "admin", "hr"] },
-      { to: "/positions", labelKey: "nav_positions", icon: IconBriefcase, roles: ["super_admin", "admin"] },
-      { to: "/texts", labelKey: "nav_texts", icon: IconFileText, roles: ["super_admin", "admin"] },
+      { to: "/positions", labelKey: "nav_positions", icon: IconBriefcase, roles: ["super_admin", "admin", "hr"] },
+      { to: "/texts", labelKey: "nav_texts", icon: IconFileText, roles: ["super_admin", "admin", "hr"] },
     ],
   },
   {

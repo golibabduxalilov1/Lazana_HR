@@ -34,12 +34,13 @@ export default function App() {
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/applications" element={<Applications />} />
                     <Route path="/applications/:id" element={<ApplicationDetail />} />
+                    <Route path="/positions" element={<Positions />} />
+                    <Route path="/texts" element={<Texts />} />
 
-                    {/* HR - faqat arizalarni ko'rish/status o'zgartirish/eksport huquqiga ega;
-                        Lavozimlar/Matnlar/Xodimlar (Administratsiya) faqat admin/super_admin uchun. */}
+                    {/* Xodimlar (Administratsiya) faqat admin/super_admin uchun — HR bu yerga kira
+                        olmaydi. Lavozimlar/Matnlar HR uchun faqat ko'rish rejimida ochiq
+                        (tahrirlash tugmalari sahifa ichida RoleGate bilan yashirilgan). */}
                     <Route element={<PrivateRoute roles={ADMIN_ROLES} />}>
-                      <Route path="/positions" element={<Positions />} />
-                      <Route path="/texts" element={<Texts />} />
                       <Route path="/admins" element={<Admins />} />
                     </Route>
                   </Route>

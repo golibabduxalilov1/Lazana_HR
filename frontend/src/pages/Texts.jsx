@@ -4,6 +4,7 @@ import { useI18n } from "../context/I18nContext";
 import { useToast } from "../context/ToastContext";
 import { apiErrorMessage } from "../services/client";
 import { Loading } from "../components/Loading";
+import { RoleGate } from "../components/RoleGate";
 
 const TEXT_KEY_LABELS = {
   about_us: "Kompaniya haqida",
@@ -65,30 +66,42 @@ export default function Texts() {
         <div className="panel" key={row.key}>
           <h2 className="panel-title">{TEXT_KEY_LABELS[row.key] || row.key}</h2>
           <label className="form-label">{t("texts_uz")}</label>
-          <textarea
-            className="form-input"
-            rows={3}
-            value={drafts[row.key]?.text_uz || ""}
-            onChange={(e) =>
-              setDrafts({ ...drafts, [row.key]: { ...drafts[row.key], text_uz: e.target.value } })
-            }
-          />
-          <label className="form-label">{t("texts_ru")}</label>
-          <textarea
-            className="form-input"
-            rows={3}
-            value={drafts[row.key]?.text_ru || ""}
-            onChange={(e) =>
-              setDrafts({ ...drafts, [row.key]: { ...drafts[row.key], text_ru: e.target.value } })
-            }
-          />
-          <button
-            className="btn btn-primary"
-            disabled={savingKey === row.key || !isDirty(row.key)}
-            onClick={() => save(row.key)}
+          <RoleGate
+            roles={["super_admin", "admin"]}
+            fallback={<p className="form-input">{drafts[row.key]?.text_uz || "—"}</p>}
           >
-            {savingKey === row.key ? t("loading") : t("save")}
-          </button>
+            <textarea
+              className="form-input"
+              rows={3}
+              value={drafts[row.key]?.text_uz || ""}
+              onChange={(e) =>
+                setDrafts({ ...drafts, [row.key]: { ...drafts[row.key], text_uz: e.target.value } })
+              }
+            />
+          </RoleGate>
+          <label className="form-label">{t("texts_ru")}</label>
+          <RoleGate
+            roles={["super_admin", "admin"]}
+            fallback={<p className="form-input">{drafts[row.key]?.text_ru || "—"}</p>}
+          >
+            <textarea
+              className="form-input"
+              rows={3}
+              value={drafts[row.key]?.text_ru || ""}
+              onChange={(e) =>
+                setDrafts({ ...drafts, [row.key]: { ...drafts[row.key], text_ru: e.target.value } })
+              }
+            />
+          </RoleGate>
+          <RoleGate roles={["super_admin", "admin"]}>
+            <button
+              className="btn btn-primary"
+              disabled={savingKey === row.key || !isDirty(row.key)}
+              onClick={() => save(row.key)}
+            >
+              {savingKey === row.key ? t("loading") : t("save")}
+            </button>
+          </RoleGate>
         </div>
       ))}
     </div>
