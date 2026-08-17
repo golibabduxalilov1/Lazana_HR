@@ -11,20 +11,23 @@ from admin_panel.deps import get_session
 from admin_panel.main import app
 from admin_panel.security import create_access_token, hash_password
 from app.db.base import Base
-from app.db.models import Admin
+from app.db.models import Admin, AuditLog
+
+_TABLES = [Admin.__table__, AuditLog.__table__]
 
 
 @pytest_asyncio.fixture
 async def session_maker() -> AsyncIterator[async_sessionmaker[AsyncSession]]:
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     async with engine.begin() as conn:
-        await conn.run_sync(Admin.__table__.create)
+        for table in _TABLES:
+            await conn.run_sync(table.create)
     maker = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
     try:
         yield maker
     finally:
         async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.drop_all, tables=[Admin.__table__])
+            await conn.run_sync(Base.metadata.drop_all, tables=_TABLES)
         await engine.dispose()
 
 

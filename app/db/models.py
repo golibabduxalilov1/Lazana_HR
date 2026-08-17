@@ -4,6 +4,7 @@ import datetime as dt
 
 from sqlalchemy import (
     ARRAY,
+    JSON,
     BigInteger,
     Boolean,
     Date,
@@ -160,11 +161,13 @@ class BotText(Base):
 class AuditLog(Base):
     __tablename__ = "audit_log"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True
+    )
     actor_type: Mapped[str | None] = mapped_column(String(20))  # user | admin | system
     actor_id: Mapped[int | None] = mapped_column(BigInteger)
     action: Mapped[str | None] = mapped_column(String(100))
     entity_type: Mapped[str | None] = mapped_column(String(50))
     entity_id: Mapped[int | None] = mapped_column(BigInteger)
-    meta: Mapped[dict | None] = mapped_column(JSONB)
+    meta: Mapped[dict | None] = mapped_column(JSON().with_variant(JSONB(), "postgresql"))
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
