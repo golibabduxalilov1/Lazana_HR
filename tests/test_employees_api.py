@@ -3,6 +3,7 @@ from __future__ import annotations
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.db.models import Admin
 from tests.conftest import auth_headers, make_admin
 
 
@@ -197,14 +198,16 @@ async def test_cannot_change_own_role(client: AsyncClient, session_maker: async_
     assert res.status_code == 403
 
 
-async def test_delete_employee_soft_deletes(
+async def test_delete_employee_hard_deletes(
     client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]
 ) -> None:
     super_admin = await make_admin(session_maker, telegram_id=50, role="super_admin")
     target = await make_admin(session_maker, telegram_id=51, role="hr", with_login=False)
     res = await client.delete(f"/api/employees/{target.id}", headers=auth_headers(super_admin))
-    assert res.status_code == 200
-    assert res.json()["is_active"] is False
+    assert res.status_code == 204
+
+    async with session_maker() as session:
+        assert await session.get(Admin, target.id) is None
 
 
 async def test_delete_self_blocked(client: AsyncClient, session_maker: async_sessionmaker[AsyncSession]) -> None:

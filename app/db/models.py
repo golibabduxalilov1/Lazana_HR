@@ -121,7 +121,7 @@ class ApplicationStatusHistory(Base):
     )
     old_status: Mapped[str | None] = mapped_column(String(20))
     new_status: Mapped[str] = mapped_column(String(20), nullable=False)
-    changed_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("admins.id"))
+    changed_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("admins.id", ondelete="SET NULL"))
     comment: Mapped[str | None] = mapped_column(Text)
     changed_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

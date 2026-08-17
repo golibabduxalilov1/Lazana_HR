@@ -145,12 +145,12 @@ async def update_employee(
     return EmployeeOut.model_validate(employee)
 
 
-@router.delete("/{employee_id}", response_model=EmployeeOut)
+@router.delete("/{employee_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_employee(
     employee_id: int,
     session: AsyncSession = Depends(get_session),
     admin: Admin = Depends(require_roles("super_admin", "admin")),
-) -> EmployeeOut:
+) -> None:
     employee = await session.get(Admin, employee_id)
     if employee is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Xodim topilmadi")
@@ -160,7 +160,6 @@ async def delete_employee(
     if employee.id == admin.id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "O'zingizni o'chira olmaysiz")
 
-    employee.is_active = False
     await log_action(
         session,
         actor_id=admin.id,
@@ -169,6 +168,5 @@ async def delete_employee(
         entity_id=employee.id,
         meta={"full_name": employee.full_name},
     )
+    await session.delete(employee)
     await session.commit()
-    await session.refresh(employee)
-    return EmployeeOut.model_validate(employee)
