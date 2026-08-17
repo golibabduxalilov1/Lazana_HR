@@ -48,7 +48,11 @@
   }
 
   .app-footer {
-    @apply flex-shrink-0 border-t border-border-subtle bg-white py-3 text-center text-[11px] text-ink-400;
+    @apply flex-shrink-0 border-t border-border-subtle bg-white py-3 text-center text-[11px];
+  }
+
+  .app-footer a {
+    @apply text-ink-400 no-underline transition-colors duration-150 hover:text-primary-700 hover:underline;
   }
 
   /* Sidebar */
@@ -342,7 +346,7 @@
   }
 
   .login-submit {
-    @apply mt-5 flex h-11 w-full items-center justify-center gap-2 text-sm font-semibold tracking-wide shadow-[0_6px_16px_rgba(79,70,229,0.25)] transition-transform duration-150 hover:-translate-y-px;
+    @apply mt-5 flex h-11 w-full items-center justify-center gap-2 text-sm font-semibold tracking-wide shadow-[0_6px_16px_rgba(14,29,71,0.35)] transition-transform duration-150 hover:-translate-y-px;
   }
 
   .btn-spinner {

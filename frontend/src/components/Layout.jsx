@@ -11,7 +11,11 @@ export function Layout() {
         <main className="app-content">
           <Outlet />
         </main>
-        <footer className="app-footer">Powered by Silknode</footer>
+        <footer className="app-footer">
+          <a href="https://www.silknode.uz/" target="_blank" rel="noopener noreferrer">
+            Powered by Silknode
+          </a>
+        </footer>
       </div>
     </div>
   );
