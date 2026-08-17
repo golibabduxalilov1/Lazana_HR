@@ -164,7 +164,7 @@
   }
 
   .btn-primary {
-    @apply bg-primary-600 text-white hover:bg-primary-700;
+    @apply bg-[#0e1d47] text-white hover:bg-[#0a1533];
   }
 
   .btn-secondary {
@@ -952,7 +952,7 @@
   }
 
   .top-position-fill {
-    @apply h-full rounded-full bg-primary-600 transition-all duration-200;
+    @apply h-full rounded-full bg-[#1e9af7] transition-all duration-200;
   }
 
   /* Dashboard: skeleton loaders */
