@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from admin_panel.routers import applications, auth, employees, export, positions, stats, texts
+from admin_panel.routers import applications, audit_logs, auth, employees, export, positions, stats, texts
 from admin_panel.telegram import close_bot
 
 
@@ -26,6 +26,7 @@ app.include_router(texts.router)
 app.include_router(export.router)
 app.include_router(stats.router)
 app.include_router(employees.router)
+app.include_router(audit_logs.router)
 
 FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="frontend-assets")

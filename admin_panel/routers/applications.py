@@ -7,6 +7,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from admin_panel.audit import log_action
 from admin_panel.deps import get_current_admin, get_session, require_roles
 from admin_panel.schemas import (
     ApplicationDetail,
@@ -226,6 +227,14 @@ async def change_status(
             changed_by=admin.id,
             comment=payload.comment,
         )
+    )
+    await log_action(
+        session,
+        actor_id=admin.id,
+        action="application_status_change",
+        entity_type="application",
+        entity_id=application.id,
+        meta={"old_status": old_status, "new_status": payload.new_status},
     )
     await session.commit()
     if application.status == "rejected":

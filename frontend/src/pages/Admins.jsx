@@ -135,12 +135,14 @@ export default function Admins() {
         <tbody>
           {employees.map((emp) => {
             const isSelf = adminId != null && String(emp.id) === String(adminId);
-            // Only the .env superadmin (or the account itself) may edit a super_admin row;
-            // only the .env superadmin may deactivate/delete another superadmin. The backend
-            // enforces this regardless — these just keep the UI from offering actions that would 403.
-            const canEdit = isSelf || emp.role !== "super_admin" || isEnvSuperAdmin;
-            const canChangeRole = !isSelf && (emp.role !== "super_admin" || isEnvSuperAdmin);
-            const canDeactivateOrDelete = !isSelf && (emp.role !== "super_admin" || isEnvSuperAdmin);
+            // The .env superadmin row is never editable through the panel — its credentials
+            // come from .env only. Otherwise: the .env superadmin (or the account itself) may
+            // edit a super_admin row; only the .env superadmin may deactivate/delete another
+            // superadmin. The backend enforces this regardless — these just keep the UI from
+            // offering actions that would 403.
+            const canEdit = !emp.is_env_admin && (isSelf || emp.role !== "super_admin" || isEnvSuperAdmin);
+            const canChangeRole = !emp.is_env_admin && !isSelf && (emp.role !== "super_admin" || isEnvSuperAdmin);
+            const canDeactivateOrDelete = !emp.is_env_admin && !isSelf && (emp.role !== "super_admin" || isEnvSuperAdmin);
             return (
             <tr key={emp.id}>
               <td>{emp.full_name || "—"}{emp.is_env_admin && <span className="badge" title={t("admins_env_admin_hint")}> · {t("admins_env_admin")}</span>}</td>

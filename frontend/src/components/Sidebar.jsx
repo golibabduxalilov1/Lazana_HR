@@ -7,6 +7,7 @@ import {
   IconBriefcase,
   IconFileText,
   IconUsers,
+  IconClock,
   IconLogout,
 } from "./icons";
 
@@ -25,7 +26,10 @@ const NAV_GROUPS = [
   },
   {
     labelKey: "nav_group_admin",
-    items: [{ to: "/admins", labelKey: "nav_admins", icon: IconUsers, roles: ["super_admin", "admin"] }],
+    items: [
+      { to: "/admins", labelKey: "nav_admins", icon: IconUsers, roles: ["super_admin", "admin"] },
+      { to: "/logs", labelKey: "nav_logs", icon: IconClock, roles: ["super_admin", "admin"] },
+    ],
   },
 ];
 

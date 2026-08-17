@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from admin_panel.audit import log_action
 from admin_panel.deps import get_current_admin, get_session, require_roles
 from admin_panel.schemas import PositionCreate, PositionOut, PositionUpdate
 from app.db.models import Admin, Application, Position
@@ -28,10 +29,19 @@ async def list_positions(
 async def create_position(
     payload: PositionCreate,
     session: AsyncSession = Depends(get_session),
-    _admin: Admin = Depends(require_roles("super_admin", "admin")),
+    admin: Admin = Depends(require_roles("super_admin", "admin")),
 ) -> PositionOut:
     position = Position(**payload.model_dump())
     session.add(position)
+    await session.flush()
+    await log_action(
+        session,
+        actor_id=admin.id,
+        action="position_create",
+        entity_type="position",
+        entity_id=position.id,
+        meta={"name_uz": position.name_uz},
+    )
     await session.commit()
     await session.refresh(position)
     return PositionOut.model_validate(position)
@@ -42,14 +52,25 @@ async def update_position(
     position_id: int,
     payload: PositionUpdate,
     session: AsyncSession = Depends(get_session),
-    _admin: Admin = Depends(require_roles("super_admin", "admin")),
+    admin: Admin = Depends(require_roles("super_admin", "admin")),
 ) -> PositionOut:
     position = await session.get(Position, position_id)
     if position is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Lavozim topilmadi")
 
-    for field_name, value in payload.model_dump(exclude_unset=True).items():
+    data = payload.model_dump(exclude_unset=True)
+    for field_name, value in data.items():
         setattr(position, field_name, value)
+
+    if data:
+        await log_action(
+            session,
+            actor_id=admin.id,
+            action="position_update",
+            entity_type="position",
+            entity_id=position.id,
+            meta={"changed_fields": list(data.keys())},
+        )
 
     await session.commit()
     await session.refresh(position)
@@ -60,7 +81,7 @@ async def update_position(
 async def delete_position(
     position_id: int,
     session: AsyncSession = Depends(get_session),
-    _admin: Admin = Depends(require_roles("super_admin", "admin")),
+    admin: Admin = Depends(require_roles("super_admin", "admin")),
 ) -> None:
     position = await session.get(Position, position_id)
     if position is None:
@@ -75,5 +96,13 @@ async def delete_position(
             "Bu lavozimga arizalar mavjud, uni o'chirib bo'lmaydi. Nofaollashtiring.",
         )
 
+    await log_action(
+        session,
+        actor_id=admin.id,
+        action="position_delete",
+        entity_type="position",
+        entity_id=position.id,
+        meta={"name_uz": position.name_uz},
+    )
     await session.delete(position)
     await session.commit()

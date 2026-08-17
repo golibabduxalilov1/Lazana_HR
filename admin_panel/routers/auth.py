@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from admin_panel.audit import log_action
 from admin_panel.deps import get_session
 from admin_panel.schemas import LoginRequest, LoginResponse
 from admin_panel.security import create_access_token, verify_password
@@ -18,6 +19,9 @@ async def login(payload: LoginRequest, session: AsyncSession = Depends(get_sessi
     admin = await session.scalar(select(Admin).where(Admin.phone == payload.phone, Admin.is_active.is_(True)))
     if admin is None or not admin.password_hash or not verify_password(payload.password, admin.password_hash):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Raqam yoki parol noto'g'ri")
+
+    await log_action(session, actor_id=admin.id, action="login", entity_type="employee", entity_id=admin.id)
+    await session.commit()
 
     token = create_access_token(admin.id, admin.role)
     bootstrap_id = get_settings().bootstrap_super_admin_id
