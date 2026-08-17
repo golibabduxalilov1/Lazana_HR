@@ -1,6 +1,6 @@
 import { useI18n } from "../context/I18nContext";
 
-const STAGE_COLORS = { submitted: "#6da7ec", reviewed: "#2a78d6", invited: "#184f95" };
+const STAGE_COLORS = { submitted: "#1e9af7", reviewed: "#1e9af7", invited: "#1e9af7" };
 const STAGE_LABEL_KEYS = {
   submitted: "dashboard_funnel_new",
   reviewed: "dashboard_funnel_reviewed",
@@ -27,7 +27,7 @@ export function FunnelChart({ stages, rejectedCount }) {
             <div className="funnel-bar-track">
               <div
                 className="funnel-bar-fill"
-                style={{ width: `${Math.max(widthPct, maxCount ? 3 : 0)}%`, background: STAGE_COLORS[stage.key] || "#2a78d6" }}
+                style={{ width: `${Math.max(widthPct, maxCount ? 3 : 0)}%`, background: STAGE_COLORS[stage.key] || "#1e9af7" }}
               >
                 <span className="funnel-bar-count">{stage.count}</span>
               </div>

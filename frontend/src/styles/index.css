@@ -842,7 +842,7 @@
   }
 
   .trend-legend-current {
-    @apply bg-primary-600;
+    @apply bg-[#1e9af7];
   }
 
   .trend-legend-previous {
@@ -870,7 +870,7 @@
   }
 
   .trend-tooltip-dot-current {
-    @apply bg-primary-500;
+    @apply bg-[#1e9af7];
   }
 
   .trend-tooltip-dot-previous {

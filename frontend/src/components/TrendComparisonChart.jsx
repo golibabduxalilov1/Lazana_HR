@@ -5,7 +5,7 @@ const WIDTH = 640;
 const HEIGHT = 200;
 const PAD_X = 8;
 const PAD_Y = 16;
-const CURRENT_COLOR = "#4F46E5";
+const CURRENT_COLOR = "#1e9af7";
 const PREVIOUS_COLOR = "#94A3B8";
 
 export function TrendComparisonChart({ data }) {

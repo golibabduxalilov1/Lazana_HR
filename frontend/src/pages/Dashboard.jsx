@@ -21,10 +21,10 @@ import { IconInbox, IconCalendar, IconUsers, IconClock, IconX } from "../compone
 
 const STATUSES = ["submitted", "reviewed", "invited", "rejected"];
 const STATUS_COLOR = {
-  submitted: "#3B82F6",
-  reviewed: "#F59E0B",
-  invited: "#10B981",
-  rejected: "#EF4444",
+  submitted: "#1e9af7",
+  reviewed: "#1e9af7",
+  invited: "#1e9af7",
+  rejected: "#1e9af7",
 };
 
 function toISODate(d) {
