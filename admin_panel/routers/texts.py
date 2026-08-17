@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from admin_panel.audit import log_action
 from admin_panel.deps import get_current_admin, get_session, require_roles
 from admin_panel.schemas import BotTextOut, BotTextUpdate
 from app.db.models import Admin, BotText
@@ -25,7 +24,7 @@ async def update_text(
     key: str,
     payload: BotTextUpdate,
     session: AsyncSession = Depends(get_session),
-    admin: Admin = Depends(require_roles("super_admin", "admin")),
+    _admin: Admin = Depends(require_roles("super_admin", "admin")),
 ) -> BotTextOut:
     row = await session.scalar(select(BotText).where(BotText.key == key))
     if row is None:
@@ -34,15 +33,6 @@ async def update_text(
     for field_name, value in payload.model_dump(exclude_unset=True).items():
         if value is not None:
             setattr(row, field_name, value)
-
-    await log_action(
-        session,
-        actor_id=admin.id,
-        action="text_update",
-        entity_type="text",
-        entity_id=row.id,
-        meta={"key": row.key},
-    )
 
     await session.commit()
     await session.refresh(row)

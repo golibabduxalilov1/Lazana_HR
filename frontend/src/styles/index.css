@@ -100,6 +100,10 @@
     @apply flex-shrink-0 rounded-lg p-2 text-ink-400 transition-colors duration-150 hover:bg-status-repairBg hover:text-status-repairText;
   }
 
+  .sidebar-powered-by {
+    @apply border-t border-border-subtle py-3 text-center text-[11px] text-ink-400;
+  }
+
   /* Topbar */
   .topbar {
     @apply flex items-center gap-4 border-b border-border-subtle bg-white px-6 py-3.5;

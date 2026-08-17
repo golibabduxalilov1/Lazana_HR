@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from admin_panel.audit import log_action
 from admin_panel.deps import get_session, require_roles
 from admin_panel.schemas import EmployeeCreate, EmployeeOut, EmployeeUpdate
 from admin_panel.security import hash_password
@@ -70,15 +69,6 @@ async def create_employee(
         password_hash=hash_password(payload.password),
     )
     session.add(employee)
-    await session.flush()
-    await log_action(
-        session,
-        actor_id=admin.id,
-        action="employee_create",
-        entity_type="employee",
-        entity_id=employee.id,
-        meta={"full_name": employee.full_name, "role": employee.role},
-    )
     await session.commit()
     await session.refresh(employee)
     return EmployeeOut.model_validate(employee)
@@ -122,23 +112,11 @@ async def update_employee(
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "Bu Telegram ID bilan xodim allaqachon mavjud")
 
     password = data.pop("password", None)
-    changed_fields = list(data.keys())
     if password:
         employee.password_hash = hash_password(password)
-        changed_fields.append("password")
 
     for field_name, value in data.items():
         setattr(employee, field_name, value)
-
-    if changed_fields:
-        await log_action(
-            session,
-            actor_id=admin.id,
-            action="employee_update",
-            entity_type="employee",
-            entity_id=employee.id,
-            meta={"changed_fields": changed_fields},
-        )
 
     await session.commit()
     await session.refresh(employee)
@@ -160,13 +138,5 @@ async def delete_employee(
     if employee.id == admin.id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "O'zingizni o'chira olmaysiz")
 
-    await log_action(
-        session,
-        actor_id=admin.id,
-        action="employee_delete",
-        entity_type="employee",
-        entity_id=employee.id,
-        meta={"full_name": employee.full_name},
-    )
     await session.delete(employee)
     await session.commit()

@@ -13,7 +13,6 @@ import ApplicationDetail from "./pages/ApplicationDetail";
 import Positions from "./pages/Positions";
 import Texts from "./pages/Texts";
 import Admins from "./pages/Admins";
-import AuditLogs from "./pages/AuditLogs";
 import NotFound from "./pages/NotFound";
 
 const ALL_ROLES = ["super_admin", "admin", "hr"];
@@ -43,7 +42,6 @@ export default function App() {
                         (tahrirlash tugmalari sahifa ichida RoleGate bilan yashirilgan). */}
                     <Route element={<PrivateRoute roles={ADMIN_ROLES} />}>
                       <Route path="/admins" element={<Admins />} />
-                      <Route path="/logs" element={<AuditLogs />} />
                     </Route>
                   </Route>
                 </Route>

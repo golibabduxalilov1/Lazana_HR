@@ -183,25 +183,6 @@ class StatsTopPosition(BaseModel):
     pct: float
 
 
-class AuditLogItem(BaseModel):
-    id: int
-    actor_type: str | None
-    actor_id: int | None
-    actor_name: str | None
-    action: str | None
-    entity_type: str | None
-    entity_id: int | None
-    meta: dict | None
-    created_at: dt.datetime
-
-
-class AuditLogListResponse(BaseModel):
-    total: int
-    page: int
-    page_size: int
-    items: list[AuditLogItem]
-
-
 class StatsSummary(BaseModel):
     total: int
     prev_total: int
