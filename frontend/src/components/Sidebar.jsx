@@ -90,8 +90,6 @@ export function Sidebar() {
           <IconLogout />
         </button>
       </div>
-
-      <div className="sidebar-powered-by">Powered by Silknode</div>
     </aside>
   );
 }

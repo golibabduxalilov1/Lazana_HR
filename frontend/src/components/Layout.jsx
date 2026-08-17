@@ -11,6 +11,7 @@ export function Layout() {
         <main className="app-content">
           <Outlet />
         </main>
+        <footer className="app-footer">Powered by Silknode</footer>
       </div>
     </div>
   );
