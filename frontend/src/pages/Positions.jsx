@@ -69,6 +69,15 @@ export default function Positions() {
     }
   };
 
+  const togglePriority = async (p) => {
+    try {
+      await updatePosition(p.id, { is_priority: !p.is_priority });
+      load();
+    } catch (err) {
+      toast.error(apiErrorMessage(err));
+    }
+  };
+
   const remove = async (p) => {
     if (!(await confirm(`${t("delete")}: ${p.name_uz}?`))) return;
     try {
@@ -136,11 +145,11 @@ export default function Positions() {
             <table className="data-table">
               <thead>
                 <tr>
+                  <th>{t("positions_priority")}</th>
                   <th>{t("positions_name_uz")}</th>
                   <th>{t("positions_name_ru")}</th>
                   <th>{t("positions_sort_order")}</th>
                   <th>{t("active")}</th>
-                  <th>{t("positions_priority")}</th>
                   <RoleGate roles={["super_admin", "admin"]}>
                     <th />
                   </RoleGate>
@@ -151,14 +160,21 @@ export default function Positions() {
                   .filter((p) => p.category_id === cat.id)
                   .map((p) => (
                     <tr key={p.id}>
+                      <td>
+                        <label className="priority-toggle">
+                          <input
+                            type="checkbox"
+                            checked={p.is_priority}
+                            onChange={() => togglePriority(p)}
+                          />
+                          <PriorityBadge priority={p.is_priority} />
+                        </label>
+                      </td>
                       <td>{p.name_uz}</td>
                       <td>{p.name_ru || "—"}</td>
                       <td>{p.sort_order}</td>
                       <td>
                         <ActiveBadge active={p.is_active} />
-                      </td>
-                      <td>
-                        <PriorityBadge priority={p.is_priority} />
                       </td>
                       <RoleGate roles={["super_admin", "admin"]}>
                         <td className="row-actions">
