@@ -45,7 +45,7 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <img src="/logo.svg" alt="LAZANA HR" className="h-8 w-auto" />
+        <img src="/logo1.svg" alt="LAZANA HR" className="h-8 w-auto" />
       </div>
 
       <nav className="sidebar-nav">
