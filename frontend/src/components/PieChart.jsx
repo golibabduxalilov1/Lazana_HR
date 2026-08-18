@@ -1,33 +1,55 @@
 import { useState } from "react";
 import { useI18n } from "../context/I18nContext";
 
-// Validated categorical ramp (dataviz skill): passes CVD/contrast checks for the
-// slot counts actually used here (position categories, typically 3).
+// Matches the brand categorical sequence used across the reference design
+// (navy / bright blue / amber), extended with further palette colors for
+// installations with more than three categories.
 export const CATEGORY_PALETTE = [
-  "#2a78d6", // blue
-  "#eb6834", // orange
+  "#0e1d47", // navy
+  "#1e9af7", // bright blue
+  "#ffb95f", // amber
   "#1baf7a", // aqua
-  "#eda100", // yellow
   "#e87ba4", // magenta
-  "#008300", // green
   "#4a3aa7", // violet
+  "#eda100", // yellow
   "#e34948", // red
 ];
 
 const CX = 70;
 const CY = 70;
 const R_OUTER = 62;
-const R_INNER = 38;
-const GAP_DEG = 2;
+const R_INNER = 46.5;
+const GAP_DEG = 0;
 
 function polarToCartesian(cx, cy, r, angleDeg) {
   const a = ((angleDeg - 90) * Math.PI) / 180;
   return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
 }
 
+// A single SVG arc command can't render a full 360deg sweep (start and end
+// points coincide, so browsers draw nothing) — build the ring from two
+// concentric circles instead, cut out with the evenodd fill rule.
+function fullRingPath() {
+  const outerRight = { x: CX + R_OUTER, y: CY };
+  const outerLeft = { x: CX - R_OUTER, y: CY };
+  const innerRight = { x: CX + R_INNER, y: CY };
+  const innerLeft = { x: CX - R_INNER, y: CY };
+  return [
+    "M", outerRight.x, outerRight.y,
+    "A", R_OUTER, R_OUTER, 0, 1, 0, outerLeft.x, outerLeft.y,
+    "A", R_OUTER, R_OUTER, 0, 1, 0, outerRight.x, outerRight.y,
+    "Z",
+    "M", innerRight.x, innerRight.y,
+    "A", R_INNER, R_INNER, 0, 1, 0, innerLeft.x, innerLeft.y,
+    "A", R_INNER, R_INNER, 0, 1, 0, innerRight.x, innerRight.y,
+    "Z",
+  ].join(" ");
+}
+
 function arcPath(startAngle, endAngle) {
   const start = Math.min(startAngle, endAngle);
   const end = Math.max(startAngle, endAngle);
+  if (end - start >= 359.9) return fullRingPath();
   const largeArc = end - start > 180 ? 1 : 0;
   const outerStart = polarToCartesian(CX, CY, R_OUTER, end);
   const outerEnd = polarToCartesian(CX, CY, R_OUTER, start);
@@ -42,7 +64,7 @@ function arcPath(startAngle, endAngle) {
   ].join(" ");
 }
 
-export function PieChart({ data, onSegmentClick, selectedLabel }) {
+export function PieChart({ data, onSegmentClick, selectedLabel, colorFor, centerLabel }) {
   const { t } = useI18n();
   const [hovered, setHovered] = useState(null);
   const total = data.reduce((sum, d) => sum + d.value, 0) || 1;
@@ -55,7 +77,7 @@ export function PieChart({ data, onSegmentClick, selectedLabel }) {
     const gap = data.length > 1 ? GAP_DEG / 2 : 0;
     return {
       ...d,
-      color: CATEGORY_PALETTE[i % CATEGORY_PALETTE.length],
+      color: colorFor ? colorFor(d) : CATEGORY_PALETTE[i % CATEGORY_PALETTE.length],
       path: arcPath(startAngle + gap, endAngle - gap),
       pct: Math.round((d.value / total) * 100),
     };
@@ -74,6 +96,7 @@ export function PieChart({ data, onSegmentClick, selectedLabel }) {
                 key={seg.label}
                 d={seg.path}
                 fill={seg.color}
+                fillRule="evenodd"
                 className={`pie-segment${clickable ? " pie-segment-clickable" : ""}${isDimmed ? " pie-segment-dimmed" : ""}`}
                 role={clickable ? "button" : undefined}
                 tabIndex={clickable ? 0 : undefined}
@@ -89,7 +112,7 @@ export function PieChart({ data, onSegmentClick, selectedLabel }) {
         </svg>
         <div className="pie-chart-hole">
           <span className="pie-chart-hole-value">{total}</span>
-          <span className="pie-chart-hole-label">{t("dashboard_total_short")}</span>
+          <span className="pie-chart-hole-label">{centerLabel || t("dashboard_total_short")}</span>
         </div>
         {hovered && (
           <div className="chart-tooltip pie-chart-tooltip">
@@ -107,8 +130,11 @@ export function PieChart({ data, onSegmentClick, selectedLabel }) {
             className={`${clickable ? "pie-legend-clickable" : ""}${selectedLabel === seg.label ? " pie-legend-active" : ""}`}
             onClick={() => onSegmentClick?.(seg)}
           >
-            <span className="pie-swatch" style={{ background: seg.color }} />
-            {seg.label}: {seg.value} ({seg.pct}%)
+            <span className="pie-legend-left">
+              <span className="pie-swatch" style={{ background: seg.color }} />
+              {seg.label}
+            </span>
+            <span className="pie-legend-pct">{seg.pct}%</span>
           </li>
         ))}
       </ul>

@@ -14,15 +14,7 @@ import { Loading } from "../components/Loading";
 import { StatusBadge } from "../components/StatusBadge";
 import { PriorityBadge } from "../components/PriorityBadge";
 import { RoleGate } from "../components/RoleGate";
-import {
-  IconUsers,
-  IconFileText,
-  IconCalendar,
-  IconClock,
-  IconTrendingUp,
-  IconTrash,
-  IconDownload,
-} from "../components/icons";
+import { Icon } from "../components/icons";
 
 const VALID_TRANSITIONS = {
   submitted: ["reviewed"],
@@ -134,8 +126,9 @@ export default function ApplicationDetail() {
 
   return (
     <div>
-      <button className="btn btn-secondary back-btn" onClick={() => navigate(`/applications${location.search}`)}>
-        ← {t("back")}
+      <button className="btn btn-secondary back-btn flex items-center gap-1.5" onClick={() => navigate(`/applications${location.search}`)}>
+        <Icon name="arrow_back" className="text-[18px]" />
+        {t("back")}
       </button>
 
       <div className="detail-header">
@@ -152,14 +145,14 @@ export default function ApplicationDetail() {
             onClick={handleDownloadResume}
             disabled={downloadingResume}
           >
-            <IconDownload width="16" height="16" />
+            <Icon name="download" className="text-[18px]" />
             {downloadingResume ? t("loading") : t("detail_download_resume")}
           </button>
 
           <RoleGate roles={["super_admin"]}>
             <button className="btn btn-danger !mr-0" onClick={handleDelete}>
               <span className="inline-flex items-center gap-1.5">
-                <IconTrash /> {t("delete")}
+                <Icon name="delete" className="text-[18px]" /> {t("delete")}
               </span>
             </button>
           </RoleGate>
@@ -168,7 +161,7 @@ export default function ApplicationDetail() {
 
       <div className="detail-layout">
         <div className="detail-main">
-          <Section icon={<IconUsers />} title={t("detail_section_basic")}>
+          <Section icon={<Icon name="group" />} title={t("detail_section_basic")}>
             <Field label={t("apps_full_name")} value={application.full_name} />
             <Field label={t("apps_phone")} value={application.phone} />
             <div className="detail-field">
@@ -184,7 +177,7 @@ export default function ApplicationDetail() {
             <Field label={t("detail_source")} value={application.source} />
           </Section>
 
-          <Section icon={<IconFileText />} title={t("detail_section_qualification")}>
+          <Section icon={<Icon name="school" />} title={t("detail_section_qualification")}>
             <Field label={t("detail_education_level")} value={application.education_level} />
             <Field label={t("detail_education_institution")} value={application.education_institution} />
             <Field label={t("detail_work_experience")} value={application.work_experience_text} />
@@ -207,7 +200,7 @@ export default function ApplicationDetail() {
             <div className="detail-card">
               <div className="detail-card-header">
                 <span className="detail-card-icon">
-                  <IconTrendingUp />
+                  <Icon name="trending_up" />
                 </span>
                 <h2 className="detail-card-title">{t("detail_change_status")}</h2>
               </div>
@@ -244,7 +237,7 @@ export default function ApplicationDetail() {
           <div className="detail-card">
             <div className="detail-card-header">
               <span className="detail-card-icon">
-                <IconCalendar />
+                <Icon name="calendar_today" />
               </span>
               <h2 className="detail-card-title">{t("detail_section_meta")}</h2>
             </div>
@@ -263,7 +256,7 @@ export default function ApplicationDetail() {
           <div className="detail-card">
             <div className="detail-card-header">
               <span className="detail-card-icon">
-                <IconClock />
+                <Icon name="schedule" />
               </span>
               <h2 className="detail-card-title">{t("detail_history")}</h2>
             </div>

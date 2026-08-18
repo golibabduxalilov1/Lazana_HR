@@ -7,9 +7,8 @@ import { useConfirm } from "../context/ConfirmContext";
 import { apiErrorMessage } from "../services/client";
 import { Loading } from "../components/Loading";
 import { RoleGate } from "../components/RoleGate";
-import { ActiveBadge } from "../components/ActiveBadge";
 import { PriorityBadge } from "../components/PriorityBadge";
-import { IconEdit, IconPower, IconTrash, IconX } from "../components/icons";
+import { Icon } from "../components/icons";
 
 const EMPTY_FORM = { category_id: "", name_uz: "", name_ru: "", sort_order: 0, is_priority: false };
 
@@ -115,89 +114,109 @@ export default function Positions() {
 
   return (
     <div>
-      <h1 className="page-title">{t("positions_title")}</h1>
-
-      <RoleGate roles={["super_admin", "admin"]}>
-        <button className="btn btn-primary" onClick={openNewModal}>
-          + {t("positions_new")}
-        </button>
-      </RoleGate>
-
-      <div className="period-tabs mb-5 inline-flex w-fit border border-border-subtle bg-white">
-        {categories.map((cat) => (
-          <button
-            key={cat.id}
-            type="button"
-            className={`period-tab${activeCategoryId === cat.id ? " period-tab-active" : ""}`}
-            onClick={() => setActiveCategoryId(cat.id)}
-          >
-            {cat.name_uz}
+      <div className="positions-header">
+        <div>
+          <h1 className="page-title mb-2">{t("positions_title")}</h1>
+          <p className="positions-subtitle">{t("positions_subtitle")}</p>
+        </div>
+        <RoleGate roles={["super_admin", "admin"]}>
+          <button className="btn btn-primary m-0 flex items-center gap-2 px-6 py-3" onClick={openNewModal}>
+            <Icon name="add" className="text-[18px]" />
+            {t("positions_new")}
           </button>
-        ))}
+        </RoleGate>
       </div>
 
       {(() => {
         const cat = categories.find((c) => c.id === activeCategoryId);
-        if (!cat) return null;
+        const catPositions = cat ? positions.filter((p) => p.category_id === cat.id) : [];
         return (
-          <div className="panel" key={cat.id}>
-            <h2 className="panel-title">{cat.name_uz}</h2>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>{t("positions_priority")}</th>
-                  <th>{t("positions_name_uz")}</th>
-                  <th>{t("positions_name_ru")}</th>
-                  <th>{t("positions_sort_order")}</th>
-                  <th>{t("active")}</th>
-                  <RoleGate roles={["super_admin", "admin"]}>
-                    <th />
-                  </RoleGate>
-                </tr>
-              </thead>
-              <tbody>
-                {positions
-                  .filter((p) => p.category_id === cat.id)
-                  .map((p) => (
-                    <tr key={p.id}>
+          <div className="positions-canvas">
+            <nav className="positions-tabs">
+              {categories.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={`positions-tab${activeCategoryId === c.id ? " positions-tab-active" : ""}`}
+                  onClick={() => setActiveCategoryId(c.id)}
+                >
+                  {c.name_uz}
+                </button>
+              ))}
+            </nav>
+
+            <div className="overflow-x-auto">
+              <table className="positions-table">
+                <thead>
+                  <tr className="positions-thead-row">
+                    <th className="w-1/2">{t("positions_name_uz")}</th>
+                    <th className="w-1/4">{t("positions_priority")}</th>
+                    <th className="w-32">{t("active")}</th>
+                    <RoleGate roles={["super_admin", "admin"]}>
+                      <th className="text-right">{t("actions")}</th>
+                    </RoleGate>
+                  </tr>
+                </thead>
+                <tbody>
+                  {catPositions.map((p) => (
+                    <tr key={p.id} className="group">
+                      <td>
+                        <div className="flex items-center gap-3">
+                          <div className="positions-row-icon">
+                            <Icon name="work" className="text-lg" />
+                          </div>
+                          <div>
+                            <p className="positions-row-name">{p.name_uz}</p>
+                            <p className="positions-row-sub">{p.name_ru || "—"}</p>
+                          </div>
+                        </div>
+                      </td>
                       <td>
                         <label className="priority-toggle">
-                          <input
-                            type="checkbox"
-                            checked={p.is_priority}
-                            onChange={() => togglePriority(p)}
-                          />
+                          <input type="checkbox" checked={p.is_priority} onChange={() => togglePriority(p)} />
                           <PriorityBadge priority={p.is_priority} />
                         </label>
                       </td>
-                      <td>{p.name_uz}</td>
-                      <td>{p.name_ru || "—"}</td>
-                      <td>{p.sort_order}</td>
                       <td>
-                        <ActiveBadge active={p.is_active} />
+                        <div className="relative mr-2 inline-block w-10 select-none align-middle transition duration-200 ease-in">
+                          <input
+                            type="checkbox"
+                            className="toggle-checkbox absolute z-10 block h-5 w-5 cursor-pointer appearance-none rounded-full border-4 border-surface-variant bg-white"
+                            id={`position-toggle-${p.id}`}
+                            checked={p.is_active}
+                            onChange={() => toggleActive(p)}
+                            aria-label={p.is_active ? t("inactive") : t("active")}
+                          />
+                          <label
+                            className="toggle-label block h-5 cursor-pointer overflow-hidden rounded-full bg-surface-variant"
+                            htmlFor={`position-toggle-${p.id}`}
+                          />
+                        </div>
                       </td>
                       <RoleGate roles={["super_admin", "admin"]}>
-                        <td className="row-actions">
-                          <button className="btn btn-secondary btn-icon" title={t("edit")} aria-label={t("edit")} onClick={() => openEditModal(p)}>
-                            <IconEdit />
-                          </button>
-                          <button
-                            className="btn btn-secondary btn-icon"
-                            title={p.is_active ? t("inactive") : t("active")}
-                            aria-label={p.is_active ? t("inactive") : t("active")}
-                            onClick={() => toggleActive(p)}
-                          >
-                            <IconPower />
-                          </button>
-                          <button className="btn btn-danger btn-icon" title={t("delete")} aria-label={t("delete")} onClick={() => remove(p)}>
-                            <IconTrash />
-                          </button>
+                        <td>
+                          <div className="positions-row-actions">
+                            <button className="positions-action-btn" title={t("edit")} aria-label={t("edit")} onClick={() => openEditModal(p)}>
+                              <Icon name="edit" className="text-lg" />
+                            </button>
+                            <button className="positions-action-btn-danger" title={t("delete")} aria-label={t("delete")} onClick={() => remove(p)}>
+                              <Icon name="delete" className="text-lg" />
+                            </button>
+                          </div>
                         </td>
                       </RoleGate>
                     </tr>
                   ))}
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+              {catPositions.length === 0 && <div className="empty-state m-4">{t("dashboard_top_positions_empty")}</div>}
+            </div>
+
+            <div className="positions-footer">
+              <p className="positions-row-sub">
+                {catPositions.length} {t("positions_count")}
+              </p>
+            </div>
           </div>
         );
       })()}
@@ -209,7 +228,7 @@ export default function Positions() {
               <div className="modal-header">
                 <h2 className="modal-title">{editingPosition ? t("positions_edit_title") : t("positions_new")}</h2>
                 <button type="button" className="modal-close" onClick={closeModal} aria-label={t("cancel")}>
-                  <IconX />
+                  <Icon name="close" />
                 </button>
               </div>
               <form onSubmit={submitForm}>

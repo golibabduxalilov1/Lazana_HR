@@ -1,6 +1,6 @@
 import { useI18n } from "../context/I18nContext";
 import { MultiSelectDropdown } from "./MultiSelectDropdown";
-import { IconX } from "./icons";
+import { Icon } from "./icons";
 
 const PRESETS = [
   { key: "today", labelKey: "dashboard_period_today" },
@@ -31,7 +31,7 @@ export function FilterBar({ filters, onChange, categories }) {
   const categoryName = (id) => categories.find((c) => String(c.id) === String(id))?.name_uz || id;
 
   return (
-    <div className="panel filter-panel">
+    <div className="filter-bar-compact">
       <div className="filter-bar mb-0">
         <div className="period-tabs">
           {PRESETS.map((p) => (
@@ -84,7 +84,7 @@ export function FilterBar({ filters, onChange, categories }) {
         />
 
         {hasActiveFilters && (
-          <button type="button" className="btn btn-secondary" onClick={clearAll}>
+          <button type="button" className="btn btn-secondary m-0" onClick={clearAll}>
             {t("dashboard_clear_filters")}
           </button>
         )}
@@ -96,7 +96,7 @@ export function FilterBar({ filters, onChange, categories }) {
             <span className="filter-chip" key={`cat-${id}`}>
               {categoryName(id)}
               <button type="button" onClick={() => removeCategory(id)} aria-label="remove">
-                <IconX width="12" height="12" />
+                <Icon name="close" className="text-[12px]" />
               </button>
             </span>
           ))}
@@ -104,7 +104,7 @@ export function FilterBar({ filters, onChange, categories }) {
             <span className={`filter-chip filter-chip-${s}`} key={`status-${s}`}>
               {t(`status_${s}`)}
               <button type="button" onClick={() => removeStatus(s)} aria-label="remove">
-                <IconX width="12" height="12" />
+                <Icon name="close" className="text-[12px]" />
               </button>
             </span>
           ))}

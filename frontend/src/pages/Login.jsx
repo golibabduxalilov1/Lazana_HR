@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useI18n } from "../context/I18nContext";
 import { apiErrorMessage } from "../services/client";
-import { IconClock, IconFileText, IconUsers } from "../components/icons";
+import { Icon } from "../components/icons";
 import { PhoneInput } from "../components/PhoneInput";
 
 export default function Login() {
@@ -76,19 +76,19 @@ export default function Login() {
         <ul className="login-feature-list">
           <li className="login-feature">
             <span className="login-feature-icon" aria-hidden="true">
-              <IconFileText width={18} height={18} />
+              <Icon name="description" className="text-[18px]" />
             </span>
             <span>{t("login_feature_1")}</span>
           </li>
           <li className="login-feature">
             <span className="login-feature-icon" aria-hidden="true">
-              <IconClock width={18} height={18} />
+              <Icon name="schedule" className="text-[18px]" />
             </span>
             <span>{t("login_feature_2")}</span>
           </li>
           <li className="login-feature">
             <span className="login-feature-icon" aria-hidden="true">
-              <IconUsers width={18} height={18} />
+              <Icon name="group" className="text-[18px]" />
             </span>
             <span>{t("login_feature_3")}</span>
           </li>

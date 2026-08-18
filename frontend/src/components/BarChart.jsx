@@ -28,7 +28,7 @@ export function BarChart({ data, colorFor, onBarClick, selectedKey }) {
                 <div
                   className="bar-fill"
                   style={{
-                    width: `${(d.value / max) * 100}%`,
+                    width: `${Math.max((d.value / max) * 100, d.value > 0 ? 4 : 0)}%`,
                     background: colorFor ? colorFor(d.label) : undefined,
                   }}
                 />
@@ -39,6 +39,7 @@ export function BarChart({ data, colorFor, onBarClick, selectedKey }) {
                 </div>
               )}
             </div>
+            <span className="bar-pct">{Math.round((d.value / total) * 100)}%</span>
             <span className="bar-value">{d.value}</span>
           </div>
         );

@@ -22,7 +22,9 @@ export default {
   nav_group_admin: "Administratsiya",
   breadcrumb_home: "Bosh sahifa",
   notifications: "Bildirishnomalar",
+  help: "Yordam",
   nav_dashboard: "Bosh sahifa",
+  dashboard_subtitle: "Ariza va nomzodlar bo'yicha asosiy ko'rsatkichlarni kuzating.",
   nav_applications: "Arizalar",
   nav_positions: "Lavozimlar",
   nav_texts: "Matnlar",
@@ -85,6 +87,7 @@ export default {
   dashboard_top_positions_title: "Top 5 lavozim",
   dashboard_top_positions_empty: "Ma'lumot yo'q",
 
+
   dashboard_empty_title: "Hali arizalar yo'q",
   dashboard_empty_subtitle: "Tanlangan filtr bo'yicha hech qanday ariza topilmadi",
   dashboard_error_title: "Ma'lumotlarni yuklab bo'lmadi",
@@ -94,6 +97,8 @@ export default {
   dashboard_clear_selection: "Tanlovni bekor qilish",
   dashboard_view_all: "Barchasini Arizalar sahifasida ko'rish",
 
+  actions: "Amallar",
+  view: "Ko'rish",
   apps_id: "ID",
   apps_full_name: "F.I.Sh.",
   apps_position: "Lavozim",
@@ -112,6 +117,11 @@ export default {
   apps_all: "Barchasi",
   apps_empty: "Arizalar topilmadi",
   apps_page_of: "sahifa",
+  apps_showing: "Ko'rsatilmoqda",
+  apps_showing_of: "dan",
+  apps_showing_suffix: "ta",
+  prev: "Oldingi",
+  next: "Keyingi",
   apps_total: "Jami",
   apps_total_suffix: "ta ariza",
   apps_search_placeholder: "Ism yoki telefon bo'yicha qidirish...",
@@ -148,6 +158,8 @@ export default {
   detail_download_resume: "Rezyume yuklab olish (PDF)",
 
   positions_title: "Lavozimlar",
+  positions_subtitle: "Lavozimlarni, ularning faolligi va ustuvorligini boshqaring.",
+  positions_count: "ta lavozim",
   positions_name_uz: "Nomi (uz)",
   positions_name_ru: "Nomi (ru)",
   positions_sort_order: "Tartib raqami",

@@ -1,11 +1,8 @@
 import { useI18n } from "../context/I18nContext";
+import { Icon } from "./icons";
 
 function TrendArrow({ up }) {
-  return (
-    <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" className="stat-trend-arrow">
-      {up ? <path d="M5 1.5 9 7H1z" /> : <path d="M5 8.5 1 3h8z" />}
-    </svg>
-  );
+  return <Icon name={up ? "arrow_upward" : "arrow_downward"} className="stat-trend-arrow text-[14px]" />;
 }
 
 export function StatCard({ icon, iconClass, label, value, changePct, invert = false, onClick }) {
@@ -28,13 +25,17 @@ export function StatCard({ icon, iconClass, label, value, changePct, invert = fa
   }
 
   const Tag = onClick ? "button" : "div";
+  const blobClass = iconClass.split(" ")[0];
 
   return (
     <Tag className={`stat-card${onClick ? " stat-card-clickable" : ""}`} onClick={onClick} type={onClick ? "button" : undefined}>
-      <div className={`stat-card-icon ${iconClass}`}>{icon}</div>
+      <div className={`stat-card-blob ${blobClass}`} />
+      <div className="stat-card-header">
+        <div className="stat-card-label">{label}</div>
+        <div className={`stat-card-icon ${iconClass}`}>{icon}</div>
+      </div>
       <div className="stat-card-body">
         <div className="stat-value">{value}</div>
-        <div className="stat-label">{label}</div>
         {changePct !== undefined && (
           <div className="stat-trend-row">
             {trend}

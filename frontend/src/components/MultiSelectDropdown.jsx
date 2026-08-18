@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "../context/I18nContext";
-import { IconChevronRight } from "./icons";
+import { Icon } from "./icons";
 
 export function MultiSelectDropdown({ label, allLabel, options, selected, onChange }) {
   const { t } = useI18n();
@@ -40,7 +40,7 @@ export function MultiSelectDropdown({ label, allLabel, options, selected, onChan
         <span className="multiselect-trigger-label">
           <span className="multiselect-trigger-prefix">{label}:</span> {buttonText}
         </span>
-        <IconChevronRight className={`multiselect-chevron${open ? " multiselect-chevron-open" : ""}`} />
+        <Icon name="expand_more" className={`multiselect-chevron${open ? " multiselect-chevron-open" : ""}`} />
       </button>
       {open && (
         <div className="multiselect-panel">

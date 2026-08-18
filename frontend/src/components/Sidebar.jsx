@@ -1,31 +1,24 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useI18n } from "../context/I18nContext";
-import {
-  IconGrid,
-  IconInbox,
-  IconBriefcase,
-  IconFileText,
-  IconUsers,
-  IconLogout,
-} from "./icons";
+import { Icon } from "./icons";
 
 const NAV_GROUPS = [
   {
     labelKey: "nav_group_main",
-    items: [{ to: "/dashboard", labelKey: "nav_dashboard", icon: IconGrid, roles: ["super_admin", "admin", "hr"] }],
+    items: [{ to: "/dashboard", labelKey: "nav_dashboard", icon: "dashboard", roles: ["super_admin", "admin", "hr"] }],
   },
   {
     labelKey: "nav_group_management",
     items: [
-      { to: "/applications", labelKey: "nav_applications", icon: IconInbox, roles: ["super_admin", "admin", "hr"] },
-      { to: "/positions", labelKey: "nav_positions", icon: IconBriefcase, roles: ["super_admin", "admin", "hr"] },
-      { to: "/texts", labelKey: "nav_texts", icon: IconFileText, roles: ["super_admin", "admin", "hr"] },
+      { to: "/applications", labelKey: "nav_applications", icon: "description", roles: ["super_admin", "admin", "hr"] },
+      { to: "/positions", labelKey: "nav_positions", icon: "work", roles: ["super_admin", "admin", "hr"] },
+      { to: "/texts", labelKey: "nav_texts", icon: "article", roles: ["super_admin", "admin", "hr"] },
     ],
   },
   {
     labelKey: "nav_group_admin",
-    items: [{ to: "/admins", labelKey: "nav_admins", icon: IconUsers, roles: ["super_admin", "admin"] }],
+    items: [{ to: "/admins", labelKey: "nav_admins", icon: "group", roles: ["super_admin", "admin"] }],
   },
 ];
 
@@ -62,19 +55,16 @@ export function Sidebar() {
           return (
             <div key={group.labelKey}>
               <div className="sidebar-group-label">{t(group.labelKey)}</div>
-              {items.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    className={({ isActive }) => "sidebar-link" + (isActive ? " sidebar-link-active" : "")}
-                  >
-                    <Icon />
-                    {t(item.labelKey)}
-                  </NavLink>
-                );
-              })}
+              {items.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) => "sidebar-link" + (isActive ? " sidebar-link-active" : "")}
+                >
+                  <Icon name={item.icon} className="sidebar-link-icon" />
+                  <span className="sidebar-link-text">{t(item.labelKey)}</span>
+                </NavLink>
+              ))}
             </div>
           );
         })}
@@ -87,7 +77,7 @@ export function Sidebar() {
           <div className="sidebar-footer-role">{t(`role_${role}`)}</div>
         </div>
         <button className="sidebar-logout" onClick={handleLogout} aria-label={t("logout")} title={t("logout")}>
-          <IconLogout />
+          <Icon name="logout" />
         </button>
       </div>
     </aside>

@@ -10,21 +10,19 @@ import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
 import { FilterBar } from "../components/FilterBar";
 import { StatCard } from "../components/StatCard";
-import { BarChart } from "../components/BarChart";
 import { PieChart } from "../components/PieChart";
 import { TrendComparisonChart } from "../components/TrendComparisonChart";
 import { FunnelChart } from "../components/FunnelChart";
-import { TopPositionsList } from "../components/TopPositionsList";
 import { StatusBadge } from "../components/StatusBadge";
 import { Loading } from "../components/Loading";
-import { IconInbox, IconCalendar, IconUsers, IconClock, IconX } from "../components/icons";
+import { Icon } from "../components/icons";
 
 const STATUSES = ["submitted", "reviewed", "invited", "rejected"];
 const STATUS_COLOR = {
-  submitted: "#1e9af7",
+  submitted: "#64748b",
   reviewed: "#1e9af7",
-  invited: "#1e9af7",
-  rejected: "#1e9af7",
+  invited: "#10b981",
+  rejected: "#ef4444",
 };
 
 function toISODate(d) {
@@ -159,7 +157,10 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div>
-        <h1 className="page-title">{t("nav_dashboard")}</h1>
+        <div className="dashboard-header">
+          <h1 className="dashboard-title">{t("nav_dashboard")}</h1>
+          <p className="dashboard-subtitle">{t("dashboard_subtitle")}</p>
+        </div>
         <DashboardSkeleton />
       </div>
     );
@@ -168,7 +169,10 @@ export default function Dashboard() {
   if (error) {
     return (
       <div>
-        <h1 className="page-title">{t("nav_dashboard")}</h1>
+        <div className="dashboard-header">
+          <h1 className="dashboard-title">{t("nav_dashboard")}</h1>
+          <p className="dashboard-subtitle">{t("dashboard_subtitle")}</p>
+        </div>
         <ErrorState title={t("dashboard_error_title")} message={error} onRetry={fetchSummary} />
       </div>
     );
@@ -185,13 +189,17 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h1 className="page-title">{t("nav_dashboard")}</h1>
-
-      <FilterBar filters={filters} onChange={setFilters} categories={categories} />
+      <div className="dashboard-header dashboard-header-row">
+        <div>
+          <h1 className="dashboard-title">{t("nav_dashboard")}</h1>
+          <p className="dashboard-subtitle">{t("dashboard_subtitle")}</p>
+        </div>
+        <FilterBar filters={filters} onChange={setFilters} categories={categories} />
+      </div>
 
       {isEmpty ? (
         <EmptyState
-          icon={<IconInbox width="40" height="40" />}
+          icon={<Icon name="inbox" className="text-[32px]" />}
           title={t("dashboard_empty_title")}
           subtitle={t("dashboard_empty_subtitle")}
         />
@@ -199,32 +207,32 @@ export default function Dashboard() {
         <>
           <div className="stat-cards">
             <StatCard
-              icon={<IconInbox />}
-              iconClass="bg-primary-50 text-primary-700"
+              icon={<Icon name="folder_open" />}
+              iconClass="bg-primary-fixed text-on-secondary-container"
               label={t("dashboard_total")}
               value={summary.total}
               changePct={summary.change_pct}
               onClick={() => goToApplications()}
             />
             <StatCard
-              icon={<IconCalendar />}
-              iconClass="bg-status-idleBg text-status-idleText"
+              icon={<Icon name="pending_actions" />}
+              iconClass="bg-status-contacted/15 text-status-contacted"
               label={t("dashboard_reviewed_stat")}
               value={summary.reviewed_count}
               changePct={summary.reviewed_change_pct}
               onClick={() => goToApplications({ status: "reviewed" })}
             />
             <StatCard
-              icon={<IconUsers />}
-              iconClass="bg-status-workingBg text-status-workingText"
+              icon={<Icon name="handshake" />}
+              iconClass="bg-status-hired/15 text-status-hired"
               label={t("dashboard_invited_stat")}
               value={summary.invited_count}
               changePct={summary.invited_change_pct}
               onClick={() => goToApplications({ status: "invited" })}
             />
             <StatCard
-              icon={<IconClock />}
-              iconClass="bg-status-infoBg text-status-infoText"
+              icon={<Icon name="schedule" />}
+              iconClass="bg-status-review/15 text-status-review"
               label={t("dashboard_avg_review_stat")}
               value={
                 summary.avg_review_days !== null
@@ -235,20 +243,12 @@ export default function Dashboard() {
             />
           </div>
 
-          <div className="chart-grid">
-            <div className="panel">
-              <h2 className="panel-title">{t("dashboard_by_status")}</h2>
-              <BarChart
-                data={statusData}
-                colorFor={(label) => {
-                  const entry = statusData.find((d) => d.label === label);
-                  return STATUS_COLOR[entry?.key] || "#64748b";
-                }}
-                onBarClick={handleStatusBarClick}
-                selectedKey={drilldown?.type === "status" ? drilldown.value : undefined}
-              />
+          <div className="dashboard-charts-row">
+            <div className="panel dashboard-chart-main">
+              <h2 className="panel-title">{t("dashboard_trend")}</h2>
+              <TrendComparisonChart data={summary.daily_trend} />
             </div>
-            <div className="panel">
+            <div className="panel dashboard-chart-side">
               <h2 className="panel-title">{t("dashboard_by_category")}</h2>
               <PieChart
                 data={categoryData}
@@ -256,17 +256,21 @@ export default function Dashboard() {
                 selectedLabel={drilldown?.type === "category" ? drilldown.label : undefined}
               />
             </div>
-            <div className="panel col-span-2">
-              <h2 className="panel-title">{t("dashboard_trend")}</h2>
-              <TrendComparisonChart data={summary.daily_trend} />
+          </div>
+
+          <div className="chart-grid">
+            <div className="panel">
+              <h2 className="panel-title">{t("dashboard_by_status")}</h2>
+              <PieChart
+                data={statusData}
+                colorFor={(d) => STATUS_COLOR[d.key] || "#64748b"}
+                onSegmentClick={(seg) => handleStatusBarClick(seg)}
+                selectedLabel={drilldown?.type === "status" ? drilldown.label : undefined}
+              />
             </div>
             <div className="panel">
               <h2 className="panel-title">{t("dashboard_funnel_title")}</h2>
               <FunnelChart stages={summary.funnel} rejectedCount={summary.rejected_count} />
-            </div>
-            <div className="panel">
-              <h2 className="panel-title">{t("dashboard_top_positions_title")}</h2>
-              <TopPositionsList positions={summary.top_positions} />
             </div>
           </div>
 
@@ -283,7 +287,7 @@ export default function Dashboard() {
                     {t("dashboard_view_all")}
                   </button>
                   <button className="btn-icon btn btn-secondary" type="button" onClick={() => setDrilldown(null)} aria-label={t("dashboard_clear_selection")}>
-                    <IconX width="14" height="14" />
+                    <Icon name="close" className="text-[16px]" />
                   </button>
                 </div>
               </div>

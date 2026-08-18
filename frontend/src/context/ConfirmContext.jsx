@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useRef, useState } from "react";
 import { useI18n } from "./I18nContext";
-import { IconX } from "../components/icons";
+import { Icon } from "../components/icons";
 
 const ConfirmContext = createContext(null);
 
@@ -33,7 +33,7 @@ export function ConfirmProvider({ children }) {
             <div className="confirm-header">
               <h2 className="confirm-title">{state.title}</h2>
               <button type="button" className="confirm-close" onClick={() => settle(false)} aria-label={t("cancel")}>
-                <IconX />
+                <Icon name="close" />
               </button>
             </div>
             <div className="confirm-body">{state.message}</div>

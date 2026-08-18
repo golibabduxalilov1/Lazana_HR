@@ -6,7 +6,7 @@ const HEIGHT = 200;
 const PAD_X = 8;
 const PAD_Y = 16;
 const CURRENT_COLOR = "#1e9af7";
-const PREVIOUS_COLOR = "#94A3B8";
+const PREVIOUS_COLOR = "#767680";
 
 export function TrendComparisonChart({ data }) {
   const { t } = useI18n();
@@ -21,7 +21,28 @@ export function TrendComparisonChart({ data }) {
     yPrevious: HEIGHT - PAD_Y - (d.previous / max) * (HEIGHT - PAD_Y * 2),
   }));
 
-  const linePath = (key) => points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p[key]}`).join(" ");
+  // Smooth polyline into a curve (Chart.js-style tension) using cubic
+  // Bezier segments derived from each point's neighbors.
+  const smoothPath = (key) => {
+    if (points.length < 2) return "";
+    const pts = points.map((p) => ({ x: p.x, y: p[key] }));
+    const tension = 0.2;
+    let d = `M ${pts[0].x} ${pts[0].y}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[i + 2] || p2;
+      const c1x = p1.x + ((p2.x - p0.x) / 6) * tension * 3;
+      const c1y = p1.y + ((p2.y - p0.y) / 6) * tension * 3;
+      const c2x = p2.x - ((p3.x - p1.x) / 6) * tension * 3;
+      const c2y = p2.y - ((p3.y - p1.y) / 6) * tension * 3;
+      d += ` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2.x} ${p2.y}`;
+    }
+    return d;
+  };
+
+  const linePath = smoothPath;
   const areaPath =
     n > 1 ? `${linePath("yCurrent")} L ${points[n - 1].x} ${HEIGHT} L ${points[0].x} ${HEIGHT} Z` : "";
 
@@ -42,6 +63,10 @@ export function TrendComparisonChart({ data }) {
   };
 
   const tooltipPoint = hovered !== null ? points[hovered] : null;
+
+  // Evenly spaced dashed gridlines (Chart.js-style y-axis grid).
+  const GRID_LINES = 4;
+  const gridYs = Array.from({ length: GRID_LINES + 1 }, (_, i) => PAD_Y + (i / GRID_LINES) * (HEIGHT - PAD_Y * 2));
 
   return (
     <div className="trend-chart-wrap">
@@ -64,30 +89,33 @@ export function TrendComparisonChart({ data }) {
       >
         <defs>
           <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={CURRENT_COLOR} stopOpacity="0.18" />
+            <stop offset="0%" stopColor={CURRENT_COLOR} stopOpacity="0.1" />
             <stop offset="100%" stopColor={CURRENT_COLOR} stopOpacity="0" />
           </linearGradient>
         </defs>
+        {gridYs.map((y, i) => (
+          <line key={i} x1={PAD_X} y1={y} x2={WIDTH - PAD_X} y2={y} stroke="#c6c6d0" strokeOpacity="0.4" strokeWidth="1" strokeDasharray="5 5" />
+        ))}
         {n > 1 && <path d={areaPath} fill="url(#trendFill)" stroke="none" />}
         {n > 1 && (
           <path d={linePath("yPrevious")} fill="none" stroke={PREVIOUS_COLOR} strokeWidth="2" strokeDasharray="4 4" />
         )}
-        {n > 1 && <path d={linePath("yCurrent")} fill="none" stroke={CURRENT_COLOR} strokeWidth="2" />}
+        {n > 1 && <path d={linePath("yCurrent")} fill="none" stroke={CURRENT_COLOR} strokeWidth="3" strokeLinecap="round" />}
         {tooltipPoint && (
           <line
             x1={tooltipPoint.x}
             y1="0"
             x2={tooltipPoint.x}
             y2={HEIGHT}
-            stroke="#E2E8F0"
+            stroke="#c6c6d0"
             strokeWidth="1"
             strokeDasharray="3 3"
           />
         )}
         {points.map((p, i) => (
           <g key={p.date || i}>
-            <circle cx={p.x} cy={p.yCurrent} r={hovered === i ? 4 : 2.5} fill={CURRENT_COLOR} />
             <circle cx={p.x} cy={p.yPrevious} r={hovered === i ? 4 : 2.5} fill={PREVIOUS_COLOR} />
+            <circle cx={p.x} cy={p.yCurrent} r={hovered === i ? 6 : 4} fill="#ffffff" stroke={CURRENT_COLOR} strokeWidth="2" />
           </g>
         ))}
       </svg>

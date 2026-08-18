@@ -12,7 +12,7 @@ import { Loading } from "../components/Loading";
 import { StatusBadge } from "../components/StatusBadge";
 import { Pagination } from "../components/Pagination";
 import { RoleGate } from "../components/RoleGate";
-import { IconDownload, IconTrash } from "../components/icons";
+import { Icon } from "../components/icons";
 
 const STATUSES = ["submitted", "reviewed", "invited", "rejected"];
 
@@ -116,84 +116,92 @@ export default function Applications() {
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="mb-1 text-2xl font-bold text-ink-900">{t("nav_applications")}</h1>
-          <div className="flex items-center gap-1.5 text-sm text-ink-400">
-            <span>{t("apps_total")}</span>
-            <span className="role-badge">{result.total}</span>
-            <span>{t("apps_total_suffix")}</span>
-          </div>
-        </div>
+        <h1 className="font-display-lg text-display-lg text-primary">{t("nav_applications")}</h1>
 
-        <button className="btn btn-secondary m-0 flex items-center gap-1.5" onClick={handleExport} disabled={exporting}>
-          <IconDownload width="16" height="16" />
+        <button className="btn btn-primary m-0 flex items-center gap-2" onClick={handleExport} disabled={exporting}>
+          <Icon name="download" className="text-[18px]" />
           {exporting ? t("loading") : t("apps_export_excel")}
         </button>
       </div>
 
-      <form className="panel" onSubmit={applyFilters}>
-        <input
-          className="form-input mb-3"
-          placeholder={t("apps_search_placeholder")}
-          value={formState.search}
-          onChange={(e) => setFormState({ ...formState, search: e.target.value })}
-        />
+      <form className="apps-filters-card" onSubmit={applyFilters}>
+        <div className="apps-filter-grid">
+          <div className="apps-filter-field">
+            <label className="apps-filter-label">{t("apps_filter_category")}</label>
+            <select
+              className="form-input"
+              value={formState.categoryId}
+              onChange={(e) => setFormState({ ...formState, categoryId: e.target.value })}
+            >
+              <option value="">{t("apps_all")}</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name_uz}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div className="filter-bar mb-0">
-          <select
-            className="form-input"
-            value={formState.status}
-            onChange={(e) => setFormState({ ...formState, status: e.target.value })}
-          >
-            <option value="">{t("apps_all")} — {t("apps_filter_status")}</option>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {t(`status_${s}`)}
-              </option>
-            ))}
-          </select>
+          <div className="apps-filter-field">
+            <label className="apps-filter-label">{t("apps_filter_position")}</label>
+            <select
+              className="form-input"
+              value={formState.positionId}
+              onChange={(e) => setFormState({ ...formState, positionId: e.target.value })}
+            >
+              <option value="">{t("apps_all")}</option>
+              {positions.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name_uz}
+                </option>
+              ))}
+            </select>
+          </div>
 
-          <select
-            className="form-input"
-            value={formState.categoryId}
-            onChange={(e) => setFormState({ ...formState, categoryId: e.target.value })}
-          >
-            <option value="">{t("apps_all")} — {t("apps_filter_category")}</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name_uz}
-              </option>
-            ))}
-          </select>
+          <div className="apps-filter-field">
+            <label className="apps-filter-label">{t("apps_filter_status")}</label>
+            <select
+              className="form-input"
+              value={formState.status}
+              onChange={(e) => setFormState({ ...formState, status: e.target.value })}
+            >
+              <option value="">{t("apps_all")}</option>
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {t(`status_${s}`)}
+                </option>
+              ))}
+            </select>
+          </div>
 
-          <select
-            className="form-input"
-            value={formState.positionId}
-            onChange={(e) => setFormState({ ...formState, positionId: e.target.value })}
-          >
-            <option value="">{t("apps_all")} — {t("apps_filter_position")}</option>
-            {positions.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name_uz}
-              </option>
-            ))}
-          </select>
+          <div className="apps-filter-field">
+            <label className="apps-filter-label">{t("apps_filter_date_from")} — {t("apps_filter_date_to")}</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                className="form-input"
+                title={t("apps_filter_date_from")}
+                value={formState.dateFrom}
+                onChange={(e) => setFormState({ ...formState, dateFrom: e.target.value })}
+              />
+              <input
+                type="date"
+                className="form-input"
+                title={t("apps_filter_date_to")}
+                value={formState.dateTo}
+                onChange={(e) => setFormState({ ...formState, dateTo: e.target.value })}
+              />
+            </div>
+          </div>
+        </div>
 
+        <div className="apps-extra-filters">
           <input
-            type="date"
-            className="form-input"
-            title={t("apps_filter_date_from")}
-            value={formState.dateFrom}
-            onChange={(e) => setFormState({ ...formState, dateFrom: e.target.value })}
+            className="form-input w-auto min-w-[220px] flex-1"
+            placeholder={t("apps_search_placeholder")}
+            value={formState.search}
+            onChange={(e) => setFormState({ ...formState, search: e.target.value })}
           />
-          <input
-            type="date"
-            className="form-input"
-            title={t("apps_filter_date_to")}
-            value={formState.dateTo}
-            onChange={(e) => setFormState({ ...formState, dateTo: e.target.value })}
-          />
-
           <button className="btn btn-primary" type="submit">
             {t("apps_filter_apply")}
           </button>
@@ -208,50 +216,64 @@ export default function Applications() {
       ) : result.items.length === 0 ? (
         <div className="empty-state">{t("apps_empty")}</div>
       ) : (
-        <>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>{t("apps_id")}</th>
-                <th>{t("apps_full_name")}</th>
-                <th>{t("apps_position")}</th>
-                <th>{t("apps_category")}</th>
-                <th>{t("apps_phone")}</th>
-                <th>{t("apps_status")}</th>
-                <th>{t("apps_submitted_at")}</th>
-                {isSuperAdmin && <th />}
-              </tr>
-            </thead>
-            <tbody>
-              {result.items.map((item, index) => (
-                <tr
-                  key={item.id}
-                  className={`data-row${item.is_priority ? " data-row-priority" : ""}`}
-                  onClick={() => navigate(`/applications/${item.id}?${searchParams.toString()}`)}
-                >
-                  <td>{(result.page - 1) * result.page_size + index + 1}</td>
-                  <td>{item.full_name || "—"}</td>
-                  <td>{item.position_name}</td>
-                  <td>{item.category_name}</td>
-                  <td>{item.phone || "—"}</td>
-                  <td>
-                    <StatusBadge status={item.status} />
-                  </td>
-                  <td>{formatDate(item.submitted_at)}</td>
-                  <RoleGate roles={["super_admin"]}>
-                    <td className="row-actions">
-                      <button className="btn btn-danger" onClick={(e) => handleDelete(e, item)}>
-                        <IconTrash />
-                      </button>
-                    </td>
-                  </RoleGate>
+        <div className="apps-canvas">
+          <div className="overflow-x-auto">
+            <table className="apps-table">
+              <thead className="apps-thead">
+                <tr>
+                  <th className="apps-row-num">#</th>
+                  <th>{t("apps_full_name")}</th>
+                  <th>{t("apps_position")}</th>
+                  <th>{t("apps_category")}</th>
+                  <th>{t("apps_phone")}</th>
+                  <th>{t("apps_status")}</th>
+                  <th>{t("apps_submitted_at")}</th>
+                  <th className="text-right">{t("actions")}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="apps-tbody">
+                {result.items.map((item, index) => (
+                  <tr
+                    key={item.id}
+                    className={`apps-row${item.is_priority ? " apps-row-priority" : ""}`}
+                    onClick={() => navigate(`/applications/${item.id}?${searchParams.toString()}`)}
+                  >
+                    <td className="apps-row-num">{(result.page - 1) * result.page_size + index + 1}</td>
+                    <td className="font-medium">{item.full_name || "—"}</td>
+                    <td>{item.position_name}</td>
+                    <td>{item.category_name}</td>
+                    <td>{item.phone || "—"}</td>
+                    <td>
+                      <StatusBadge status={item.status} />
+                    </td>
+                    <td>{formatDate(item.submitted_at)}</td>
+                    <td className="row-actions text-right">
+                      <span className="row-actions-group">
+                        <button
+                          className="apps-view-btn"
+                          aria-label={t("view")}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/applications/${item.id}?${searchParams.toString()}`);
+                          }}
+                        >
+                          <Icon name="visibility" className="text-[20px]" />
+                        </button>
+                        <RoleGate roles={["super_admin"]}>
+                          <button className="apps-view-btn hover:text-error" aria-label={t("delete")} onClick={(e) => handleDelete(e, item)}>
+                            <Icon name="delete" className="text-[20px]" />
+                          </button>
+                        </RoleGate>
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           <Pagination page={result.page} pageSize={result.page_size} total={result.total} onPageChange={goToPage} />
-        </>
+        </div>
       )}
     </div>
   );

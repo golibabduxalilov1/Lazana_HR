@@ -8,7 +8,7 @@ import { apiErrorMessage } from "../services/client";
 import { Loading } from "../components/Loading";
 import { ActiveBadge } from "../components/ActiveBadge";
 import { PhoneInput } from "../components/PhoneInput";
-import { IconEdit, IconPower, IconTrash, IconX } from "../components/icons";
+import { Icon } from "../components/icons";
 import { formatUzPhoneReadable, isCompleteUzPhone } from "../utils/phone";
 
 const ALL_ROLES = ["super_admin", "admin", "hr"];
@@ -117,8 +117,9 @@ export default function Admins() {
     <div>
       <h1 className="page-title">{t("admins_title")}</h1>
 
-      <button className="btn btn-primary" onClick={openNewModal}>
-        + {t("admins_new")}
+      <button className="btn btn-primary flex items-center gap-1.5" onClick={openNewModal}>
+        <Icon name="add" className="text-[18px]" />
+        {t("admins_new")}
       </button>
 
       <table className="data-table">
@@ -129,7 +130,7 @@ export default function Admins() {
             <th>{t("admins_telegram_id")}</th>
             <th>{t("admins_role")}</th>
             <th>{t("admins_status")}</th>
-            <th />
+            <th className="w-[145px]" />
           </tr>
         </thead>
         <tbody>
@@ -169,26 +170,28 @@ export default function Admins() {
                 <ActiveBadge active={emp.is_active} />
               </td>
               <td className="row-actions">
-                {canEdit && (
-                  <button className="btn btn-secondary btn-icon" title={t("edit")} aria-label={t("edit")} onClick={() => openEditModal(emp)}>
-                    <IconEdit />
-                  </button>
-                )}
-                {canDeactivateOrDelete && (
-                  <>
-                    <button
-                      className="btn btn-secondary btn-icon"
-                      title={emp.is_active ? t("inactive") : t("active")}
-                      aria-label={emp.is_active ? t("inactive") : t("active")}
-                      onClick={() => toggleActive(emp)}
-                    >
-                      <IconPower />
+                <span className="row-actions-group">
+                  {canEdit && (
+                    <button className="btn btn-secondary btn-icon" title={t("edit")} aria-label={t("edit")} onClick={() => openEditModal(emp)}>
+                      <Icon name="edit" className="text-[18px]" />
                     </button>
-                    <button className="btn btn-danger btn-icon" title={t("delete")} aria-label={t("delete")} onClick={() => remove(emp)}>
-                      <IconTrash />
-                    </button>
-                  </>
-                )}
+                  )}
+                  {canDeactivateOrDelete && (
+                    <>
+                      <button
+                        className="btn btn-secondary btn-icon"
+                        title={emp.is_active ? t("inactive") : t("active")}
+                        aria-label={emp.is_active ? t("inactive") : t("active")}
+                        onClick={() => toggleActive(emp)}
+                      >
+                        <Icon name="power_settings_new" className="text-[18px]" />
+                      </button>
+                      <button className="btn btn-danger btn-icon" title={t("delete")} aria-label={t("delete")} onClick={() => remove(emp)}>
+                        <Icon name="delete" className="text-[18px]" />
+                      </button>
+                    </>
+                  )}
+                </span>
               </td>
             </tr>
             );
@@ -202,7 +205,7 @@ export default function Admins() {
             <div className="modal-header">
               <h2 className="modal-title">{editingEmployee ? t("admins_edit_title") : t("admins_new")}</h2>
               <button type="button" className="modal-close" onClick={closeModal} aria-label={t("cancel")}>
-                <IconX />
+                <Icon name="close" />
               </button>
             </div>
             <form onSubmit={submitForm}>
